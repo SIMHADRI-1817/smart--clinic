@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical History | CureConnect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            padding-bottom: 30px;
+        }
+
+        .timeline-item:before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: -30px;
+            width: 2px;
+            background: linear-gradient(180deg, #0071e3 0%, #00c6fb 100%);
+        }
+
+        .timeline-item:last-child:before {
+            display: none;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0071e3 0%, #00c6fb 100%);
+            border: 3px solid #fff;
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
+        }
+
+        .timeline-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .timeline-date {
+            color: #0071e3;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .diagnosis-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #0071e3 0%, #00c6fb 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .vitals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .vital-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .vital-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .vital-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+
+<body class="patient-layout">
+    <!-- Sidebar -->
+    <aside class="patient-sidebar">
+        <div class="sidebar-brand"><i class="fa-solid fa-activity"></i><span>CureConnect</span></div>
+        <div class="user-profile-patient">
+            <div class="user-avatar-patient">{{ user['full_name'][0] if user else 'J' }}</div>
+            <div class="user-info-patient">
+                <div class="user-name-patient">{{ user['full_name'] if user else 'John Doe' }}</div>
+                <div class="user-role-patient">Patient</div>
+            </div>
+        </div>
+        <nav class="sidebar-menu-patient">
+            <a href="{{ url_for('patient_dashboard') }}" class="menu-item-patient"><i
+                    class="fa-regular fa-calendar-check"></i><span>My Appointments</span></a>
+            <a href="{{ url_for('booking') }}" class="menu-item-patient"><i
+                    class="fa-regular fa-calendar-plus"></i><span>Book Appointment</span></a>
+            <a href="{{ url_for('medical_history') }}" class="menu-item-patient active"><i
+                    class="fa-solid fa-notes-medical"></i><span>Medical History</span></a>
+            <a href="{{ url_for('prescriptions') }}" class="menu-item-patient"><i
+                    class="fa-solid fa-prescription-bottle-medical"></i><span>Prescriptions</span></a>
+        </nav>
+        <div class="sidebar-logout-patient"><a href="{{ url_for('logout') }}" class="logout-btn-patient"><i
+                    class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="patient-content">
+        <div class="patient-header">
+            <h1>Medical History</h1>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="patient-stats-grid">
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Total Records</div>
+                <div class="stat-number-patient">{{ records|length }}</div>
+            </div>
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Recent Diagnoses</div>
+                <div class="stat-number-patient">{{ records[:3]|length }}</div>
+            </div>
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Last Checkup</div>
+                <div class="stat-number-patient" style="font-size: 16px;">{{ records[0]['created_at'][:10] if records
+                    else 'N/A' }}</div>
+            </div>
+        </div>
+
+        <!-- Vital Signs Chart -->
+        {% if vital_signs_data %}
+        <div class="chart-container">
+            <h3 style="margin-bottom: 20px; color: #2c3e50;"><i class="fa-solid fa-chart-line"></i> Vital Signs Trends
+            </h3>
+            <canvas id="vitalSignsChart" height="80"></canvas>
+        </div>
+        {% endif %}
+
+        <!-- Medical Records Timeline -->
+        <div class="patient-section">
+            <h3>Medical Records Timeline</h3>
+            {% if records %}
+            <div class="timeline">
+                {% for record in records %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date"><i class="fa-regular fa-calendar"></i> {{ record['created_at'][:16]
+                            }}</div>
+                        <div class="diagnosis-badge">{{ record['diagnosis'] }}</div>
+                        <div style="color: #2c3e50; margin-bottom: 8px;"><strong>Doctor:</strong> Dr. {{
+                            record['doctor_name'] }}</div>
+                        <div style="color: #2c3e50; margin-bottom: 8px;"><strong>Clinic:</strong> {{
+                            record['clinic_name'] }}</div>
+                        {% if record['symptoms'] %}<div style="color: #7f8c8d; margin-bottom: 8px;">
+                            <strong>Symptoms:</strong> {{ record['symptoms'] }}</div>{% endif %}
+                        {% if record['notes'] %}<div style="color: #7f8c8d; margin-bottom: 12px;">
+                            <strong>Notes:</strong> {{ record['notes'] }}</div>{% endif %}
+
+                        {% if record['blood_pressure'] or record['temperature'] or record['weight'] or record['height']
+                        %}
+                        <div class="vitals-grid">
+                            {% if record['blood_pressure'] %}<div class="vital-item">
+                                <div class="vital-label">Blood Pressure</div>
+                                <div class="vital-value">{{ record['blood_pressure'] }}</div>
+                            </div>{% endif %}
+                            {% if record['temperature'] %}<div class="vital-item">
+                                <div class="vital-label">Temperature</div>
+                                <div class="vital-value">{{ record['temperature'] }}</div>
+                            </div>{% endif %}
+                            {% if record['weight'] %}<div class="vital-item">
+                                <div class="vital-label">Weight</div>
+                                <div class="vital-value">{{ record['weight'] }}</div>
+                            </div>{% endif %}
+                            {% if record['height'] %}<div class="vital-item">
+                                <div class="vital-label">Height</div>
+                                <div class="vital-value">{{ record['height'] }}</div>
+                            </div>{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state-patient"><i class="fa-solid fa-notes-medical"></i>
+                <p>No medical records found</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        {% if vital_signs_data %}
+        const ctx = document.getElementById('vitalSignsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ vital_signs_data.dates | tojson }},
+            datasets: [
+            {
+                label: 'Systolic BP',
+                data: {{ vital_signs_data.systolic | tojson }},
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.4
+          },
+            {
+                label: 'Diastolic BP',
+                data: {{ vital_signs_data.diastolic | tojson }},
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            tension: 0.4
+          },
+            {
+                label: 'Weight (kg)',
+                data: {{ vital_signs_data.weight | tojson }},
+            borderColor: '#27ae60',
+            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+            options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Blood Pressure (mmHg)' } },
+                y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Weight (kg)' }, grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+        {% endif %}
+    </script>
+</body>
+
+</html>

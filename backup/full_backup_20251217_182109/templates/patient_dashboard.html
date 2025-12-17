@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Dashboard | CureConnect</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="patient-layout">
+  <!-- Sidebar -->
+  <aside class="patient-sidebar">
+    <div class="sidebar-brand">
+      <i class="fa-solid fa-activity"></i>
+      <span>CureConnect</span>
+    </div>
+
+    <div class="user-profile-patient">
+      <div class="user-avatar-patient">{{ user['full_name'][0] if user else 'J' }}</div>
+      <div class="user-info-patient">
+        <div class="user-name-patient">{{ user['full_name'] if user else 'John Doe' }}</div>
+        <div class="user-role-patient">Patient</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-menu-patient">
+      <a href="{{ url_for('patient_dashboard') }}" class="menu-item-patient active">
+        <i class="fa-regular fa-calendar-check"></i>
+        <span>My Appointments</span>
+      </a>
+      <a href="{{ url_for('booking') }}" class="menu-item-patient">
+        <i class="fa-regular fa-calendar-plus"></i>
+        <span>Book Appointment</span>
+      </a>
+      <a href="{{ url_for('medical_history') }}" class="menu-item-patient">
+        <i class="fa-solid fa-notes-medical"></i>
+        <span>Medical History</span>
+      </a>
+      <a href="{{ url_for('prescriptions') }}" class="menu-item-patient">
+        <i class="fa-solid fa-prescription-bottle-medical"></i>
+        <span>Prescriptions</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-logout-patient">
+      <a href="{{ url_for('logout') }}" class="logout-btn-patient">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="patient-content">
+    <div class="patient-header">
+      <h1>Patient Dashboard</h1>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="patient-stats-grid">
+      <div class="patient-stat-card">
+        <div class="stat-label-patient">My Appointments</div>
+        <div class="stat-number-patient">{{ appointments|length }}</div>
+      </div>
+      <div class="patient-stat-card">
+        <div class="stat-label-patient">Prescriptions</div>
+        <div class="stat-number-patient">{{ prescription_count }}</div>
+      </div>
+      <div class="patient-stat-card">
+        <div class="stat-label-patient">Medical Records</div>
+        <div class="stat-number-patient">{{ medical_records_count }}</div>
+      </div>
+
+      <!-- Live Queue Card (Hidden by default, shown via JS) -->
+      <div class="patient-stat-card queue-card" id="queueCard"
+        style="display: none; background: linear-gradient(135deg, #0071e3 0%, #00c6fb 100%); color: white;">
+        <div class="stat-label-patient"
+          style="color: rgba(255,255,255,0.9); display: flex; justify-content: space-between; align-items: center;">
+          Live Queue
+          <span class="live-indicator"><span class="pulse-dot"></span> Live</span>
+        </div>
+        <div class="queue-content">
+          <div class="stat-number-patient" id="queueCount" style="color: white;">-</div>
+          <div class="queue-text" style="font-size: 0.9rem; opacity: 0.9;">Patients ahead of you</div>
+          <div class="queue-doctor" id="queueDoctor"
+            style="font-size: 0.85rem; margin-top: 5px; font-weight: 500; opacity: 0.9;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Appointments Section with 2 Columns -->
+    <div class="patient-section">
+      <div class="appointments-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+        <!-- Column 1: Upcoming Appointments -->
+        <div class="appointments-column">
+          <h3>Upcoming Appointments</h3>
+          <div class="appointments-list-patient">
+            {% if upcoming_appointments %}
+            {% for appt in upcoming_appointments %}
+            <div class="appointment-card-patient">
+              <div class="appointment-date-patient">
+                <div class="date-day">{{ appt['date'].split('-')[2] if '-' in appt['date'] else '01' }}</div>
+                <div class="date-month" style="color: white !important;">{{ appt['date'].split('-')[1] if '-' in
+                  appt['date'] else 'Jan' }}</div>
+              </div>
+              <div class="appointment-details-patient">
+                <div class="appointment-title-patient">{{ appt['doctor_name'] if appt['doctor_name'].startswith('Dr.')
+                  else
+                  'Dr. ' + appt['doctor_name'] }}</div>
+                <div class="appointment-time-patient">
+                  <i class="fa-regular fa-clock"></i> {{ appt['time'] }}
+                </div>
+                <!-- Adding appointment ID visibility can be useful for debugging -->
+                <!-- <small>ID: {{ appt['id'] }}</small> -->
+                <div class="appointment-clinic-patient" style="font-size: 0.85rem; color: #666; margin-top: 4px;">
+                  <i class="fa-solid fa-hospital"></i> {{ appt['clinic_name'] }}
+                </div>
+              </div>
+              <div class="appointment-status-patient">
+                <span class="status-badge status-{{ appt['status']|lower }}">{{ appt['status']|replace('_', '
+                  ')|capitalize
+                  }}</span>
+              </div>
+              {% if appt['status'] == 'pending' %}
+              <div class="appointment-actions-patient" style="margin-left: auto;">
+                <a href="{{ url_for('edit_appointment', appointment_id=appt['id']) }}" class="btn-icon edit"
+                  style="color: #0071e3;"><i class="fa-solid fa-pen"></i></a>
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state-patient">
+              <i class="fa-regular fa-calendar"></i>
+              <p>No upcoming appointments</p>
+              <a href="{{ url_for('booking') }}" class="btn btn-book" style="max-width: 200px;">Book an Appointment</a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Column 2: Recent Appointments -->
+        <div class="appointments-column">
+          <h3>Recent Appointments</h3>
+          <div class="appointments-list-patient">
+            {% if past_appointments %}
+            {% for appt in past_appointments %}
+            <div class="appointment-card-patient" style="opacity: 0.8;">
+              <div class="appointment-date-patient" style="background-color: #f1f5f9; color: #64748b;">
+                <div class="date-day">{{ appt['date'].split('-')[2] if '-' in appt['date'] else '01' }}</div>
+                <div class="date-month">{{ appt['date'].split('-')[1] if '-' in appt['date'] else 'Jan' }}</div>
+              </div>
+              <div class="appointment-details-patient">
+                <div class="appointment-title-patient">{{ appt['doctor_name'] if appt['doctor_name'].startswith('Dr.')
+                  else
+                  'Dr. ' + appt['doctor_name'] }}</div>
+                <div class="appointment-time-patient">
+                  <i class="fa-regular fa-clock"></i> {{ appt['time'] }}
+                </div>
+                <div class="appointment-clinic-patient" style="font-size: 0.85rem; color: #666; margin-top: 4px;">
+                  <i class="fa-solid fa-hospital"></i> {{ appt['clinic_name'] }}
+                </div>
+              </div>
+              <div class="appointment-status-patient">
+                <span class="status-badge status-{{ appt['status']|lower }}">{{ appt['status']|replace('_', '
+                  ')|capitalize
+                  }}</span>
+              </div>
+              <!-- Re-book button could go here -->
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state-patient">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <p>No recent appointments</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Rating Modal -->
+  <!-- Rating Modal -->
+  <div id="ratingModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Rate Your Visit</h3>
+        <button class="close-modal" onclick="closeRatingModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>How was your appointment with <strong id="ratingDoctorName">Dr. Smith</strong>?</p>
+
+        <form action="{{ url_for('submit_rating') }}" method="POST">
+          <input type="hidden" id="ratingApptId" name="appointment_id">
+
+          <div class="star-rating">
+            <input type="radio" id="star5" name="rating" value="5" /><label for="star5"
+              title="Excellent">&#9733;</label>
+            <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="Good">&#9733;</label>
+            <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="Average">&#9733;</label>
+            <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="Poor">&#9733;</label>
+            <input type="radio" id="star1" name="rating" value="1" /><label for="star1"
+              title="Very Poor">&#9733;</label>
+          </div>
+
+          <textarea name="review" placeholder="Write a review (optional)..." rows="3"
+            style="width: 100%; margin-top: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">Submit Feedback</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Simple Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-container {
+      background: white;
+      width: 100%;
+      max-width: 400px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      animation: popIn 0.3s ease;
+    }
+
+    .modal-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f9fa;
+    }
+
+    .modal-body {
+      padding: 25px;
+      text-align: center;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #666;
+    }
+
+    /* Star Rating */
+    .star-rating {
+      direction: rtl;
+      display: inline-flex;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .star-rating input {
+      display: none;
+    }
+
+    .star-rating label {
+      color: #ddd;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .star-rating label:hover,
+    .star-rating label:hover~label,
+    .star-rating input:checked~label {
+      color: #fbbf24;
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  </style>
+
+  <script>
+    // Check for unrated appointments
+    document.addEventListener('DOMContentLoaded', function () {
+      const unratedAppts = {{ unrated_appointments| tojson if unrated_appointments else '[]'
+    }};
+    console.log('Unrated Appointments:', unratedAppts);
+
+    if (unratedAppts.length > 0) {
+      // Show modal for the most recent unrated appointment
+      const appt = unratedAppts[0];
+      openRatingModal(appt);
+    }
+
+    // Also start the queue polling
+    updateQueueStatus();
+    });
+
+    function openRatingModal(appt) {
+      let docName = appt.doctor_name || 'Doctor';
+      if (!docName.startsWith('Dr.')) {
+        docName = 'Dr. ' + docName;
+      }
+      document.getElementById('ratingDoctorName').textContent = docName;
+      document.getElementById('ratingApptId').value = appt.id;
+      document.getElementById('ratingModal').style.display = 'flex';
+    }
+
+    function closeRatingModal() {
+      document.getElementById('ratingModal').style.display = 'none';
+    }
+
+    // Live Queue Polling
+    function updateQueueStatus() {
+      fetch('/api/patient_queue_status')
+        .then(response => response.json())
+        .then(data => {
+          const card = document.getElementById('queueCard');
+          if (data.has_appointment) {
+            card.style.display = 'block';
+            document.getElementById('queueCount').textContent = data.ahead_count;
+            document.getElementById('queueDoctor').textContent = 'For Dr. ' + (data.doctor_name || 'Unknown');
+          } else {
+            card.style.display = 'none';
+          }
+        })
+        .catch(err => console.error('Error fetching queue status:', err));
+    }
+
+    // Poll every 10 seconds
+    setInterval(updateQueueStatus, 10000);
+  </script>
+</body>
+
+</html>

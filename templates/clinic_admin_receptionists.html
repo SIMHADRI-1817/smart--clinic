@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Receptionists | {{ clinic_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #000;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 30px;
+            max-height: calc(90vh - 180px);
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background-color: #fff;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .shift-row {
+            display: grid;
+            grid-template-columns: 150px 1fr 1fr 50px;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .add-type-toggle {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .add-type-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body class="admin-layout">
+    <aside class="admin-sidebar-blue">
+        <div class="sidebar-brand"><i class="fa-solid fa-hospital-user"></i><span>Clinic Admin</span></div>
+        <div class="clinic-name-display"
+            style="padding: 15px; text-align: center; color: #fff; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <i class="fa-solid fa-hospital"></i> {{ clinic_name }}
+        </div>
+        <nav class="sidebar-menu">
+            <a href="{{ url_for('clinic_admin_dashboard') }}" class="menu-item"><i
+                    class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+            <a href="{{ url_for('clinic_admin_doctors') }}" class="menu-item"><i
+                    class="fa-solid fa-user-doctor"></i><span>Doctors</span></a>
+            <a href="{{ url_for('clinic_admin_receptionists') }}" class="menu-item active"><i
+                    class="fa-solid fa-user-tie"></i><span>Receptionists</span></a>
+            <a href="{{ url_for('clinic_admin_appointments') }}" class="menu-item"><i
+                    class="fa-solid fa-calendar-check"></i><span>Appointments</span></a>
+            <a href="{{ url_for('clinic_admin_patients') }}" class="menu-item"><i
+                    class="fa-solid fa-users"></i><span>Patients</span></a>
+        </nav>
+        <div class="sidebar-logout"><a href="{{ url_for('logout') }}" class="menu-item"><i
+                    class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></div>
+    </aside>
+
+    <main class="admin-content">
+        <div class="admin-topbar">
+            <h1>Manage Receptionists</h1>
+            <div class="topbar-actions"><button class="btn-add-clinic" onclick="openAddModal()"><i
+                        class="fa-solid fa-plus"></i> Add Receptionist</button></div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-messages">{%
+            for category, message in messages %}<div class="flash-message flash-{{ category }}"><i
+                    class="fa-solid fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i>{{
+                message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+
+        <div class="table-card"
+            style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            {% if receptionists %}
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 12px; text-align: left;">Name</th>
+                        <th style="padding: 12px; text-align: left;">Email</th>
+                        <th style="padding: 12px; text-align: left;">Phone</th>
+                        <th style="padding: 12px; text-align: left;">Status</th>
+                        <th style="padding: 12px; text-align: left;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for receptionist in receptionists %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 12px;">{{ receptionist.full_name }}</td>
+                        <td style="padding: 12px;">{{ receptionist.email }}</td>
+                        <td style="padding: 12px;">{{ receptionist.phone or 'N/A' }}</td>
+                        <td style="padding: 12px;"><span class="status-tag"
+                                style="background: {{ '#27ae60' if receptionist.is_active else '#e74c3c' }}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">{{
+                                'Active' if receptionist.is_active else 'Inactive' }}</span></td>
+                        <td style="padding: 12px;">
+                            <button type="button" class="btn-clinic-action edit" data-id="{{ receptionist.user_id }}"
+                                data-name="{{ receptionist.full_name }}" data-email="{{ receptionist.email }}"
+                                data-phone="{{ receptionist.phone or '' }}"
+                                onclick="openEditReceptionistModalSafe(this)"
+                                style="margin-right: 8px; background-color: #f39c12; color: white;">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </button>
+                            <button class="btn-clinic-action edit"
+                                onclick="openShiftsModal({{ receptionist.user_id }}, '{{ receptionist.full_name }}')"
+                                style="margin-right: 8px;"><i class="fa-solid fa-clock"></i> Shifts</button><button
+                                class="btn-clinic-action delete"
+                                onclick="confirmRemove({{ receptionist.user_id }}, '{{ receptionist.full_name }}')"><i
+                                    class="fa-solid fa-trash"></i> Remove</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-clinics" style="text-align: center; padding: 40px; color: #6c757d;"><i
+                    class="fa-solid fa-user-tie" style="font-size: 48px; margin-bottom: 16px;"></i>
+                <h3>No Receptionists Found</h3>
+                <p>Click "Add Receptionist" to register or assign a receptionist to this clinic</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Add Receptionist Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-plus-circle"></i> Add Receptionist to Clinic</h2>
+                <span class="modal-close" onclick="closeAddModal()">&times;</span>
+            </div>
+            <form method="POST" action="{{ url_for('clinic_admin_add_receptionist') }}"
+                onsubmit="return validateReceptionistForm()">
+                <div class="modal-body">
+                    <div class="add-type-toggle">
+                        <label><input type="radio" name="add_type" value="existing" id="addExisting"
+                                onchange="toggleAddType()" checked><span>Select Existing Receptionist</span></label>
+                        <label><input type="radio" name="add_type" value="new" id="addNew"
+                                onchange="toggleAddType()"><span>Create New Receptionist</span></label>
+                    </div>
+
+                    <!-- Existing Receptionist Selection -->
+                    <div id="existingReceptionistSection">
+                        <div class="form-group">
+                            <label for="receptionist_id"><i class="fa-solid fa-user-tie"></i> Select
+                                Receptionist</label>
+                            <select id="receptionist_id" name="receptionist_id">
+                                <option value="">-- Select a receptionist --</option>
+                                {% for receptionist in available_receptionists %}
+                                <option value="{{ receptionist.id }}">{{ receptionist.full_name }} ({{
+                                    receptionist.email }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if not available_receptionists %}
+                        <p style="color: #e74c3c; font-size: 14px; margin-top: 10px;"><i
+                                class="fa-solid fa-info-circle"></i> No existing receptionists available. Please create
+                            a new receptionist.</p>
+                        {% else %}
+                        <p style="color: #6c757d; font-size: 14px; margin-top: 10px;"><i
+                                class="fa-solid fa-info-circle"></i> Only receptionists not currently assigned to this
+                            clinic are shown.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- New Receptionist Registration -->
+                    <div id="newReceptionistSection" style="display: none;">
+                        <div class="form-group">
+                            <label for="new_username"><i class="fa-solid fa-user"></i> Username *</label>
+                            <input type="text" id="new_username" name="new_username" placeholder="Enter username">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_full_name"><i class="fa-solid fa-id-card"></i> Full Name *</label>
+                            <input type="text" id="new_full_name" name="new_full_name" placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_email"><i class="fa-solid fa-envelope"></i> Email *</label>
+                            <input type="email" id="new_email" name="new_email" placeholder="Enter email">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_phone"><i class="fa-solid fa-phone"></i> Phone *</label>
+                            <input type="tel" id="new_phone" name="new_phone" placeholder="Enter phone number">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_password"><i class="fa-solid fa-lock"></i> Password *</label>
+                            <input type="password" id="new_password" name="new_password"
+                                placeholder="Enter password (min 6 characters)" minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="new_confirm_password"><i class="fa-solid fa-lock"></i> Confirm Password
+                                *</label>
+                            <input type="password" id="new_confirm_password" name="new_confirm_password"
+                                placeholder="Confirm password" minlength="6">
+                            <small id="passwordError" style="color: #e74c3c; display: none;">Passwords do not
+                                match!</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Add
+                        Receptionist</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Receptionist Modal -->
+    <div id="editReceptionistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-user-pen"></i> Edit Receptionist Details</h2>
+                <span class="modal-close" onclick="closeEditReceptionistModal()">&times;</span>
+            </div>
+            <form method="POST" id="editReceptionistForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit_full_name"><i class="fa-solid fa-id-card"></i> Full Name *</label>
+                        <input type="text" id="edit_full_name" name="full_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_email"><i class="fa-solid fa-envelope"></i> Email *</label>
+                        <input type="email" id="edit_email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_phone"><i class="fa-solid fa-phone"></i> Phone *</label>
+                        <input type="tel" id="edit_phone" name="phone" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeEditReceptionistModal()">Cancel</button>
+                    <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manage Shifts Modal -->
+    <div id="shiftsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-clock"></i> Manage Shifts: <span id="shiftReceptionistName"></span></h2>
+                <span class="modal-close" onclick="closeShiftsModal()">&times;</span>
+            </div>
+            <form method="POST" id="shiftsForm">
+                <div class="modal-body">
+                    <div id="shiftsContainer">
+                        {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                        <div class="shift-row">
+                            <label><input type="checkbox" name="days" value="{{ day }}" id="day_{{ day }}">{{ day
+                                }}</label>
+                            <input type="time" name="start_{{ day }}" id="start_{{ day }}" disabled>
+                            <input type="time" name="end_{{ day }}" id="end_{{ day }}" disabled>
+                            <span></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeShiftsModal()">Cancel</button>
+                    <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> Save Shifts</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Remove Confirmation Modal -->
+    <div id="removeModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-exclamation-triangle"></i> Confirm Remove</h2>
+                <span class="modal-close" onclick="closeRemoveModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove <strong id="removeReceptionistName"></strong> from this clinic?</p>
+                <p style="color: #e74c3c; font-size: 14px;">This will also remove all their shift schedules.</p>
+            </div>
+            <form id="removeForm" method="POST">
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeRemoveModal()">Cancel</button>
+                    <button type="submit" class="btn-danger" style="background: #e74c3c;"><i
+                            class="fa-solid fa-trash"></i> Remove Receptionist</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; resetAddForm(); }
+
+        function toggleAddType() {
+            const isExisting = document.getElementById('addExisting').checked;
+            document.getElementById('existingReceptionistSection').style.display = isExisting ? 'block' : 'none';
+            document.getElementById('newReceptionistSection').style.display = isExisting ? 'none' : 'block';
+
+            document.getElementById('receptionist_id').required = isExisting;
+            document.getElementById('new_username').required = !isExisting;
+            document.getElementById('new_full_name').required = !isExisting;
+            document.getElementById('new_email').required = !isExisting;
+            document.getElementById('new_phone').required = !isExisting;
+            document.getElementById('new_password').required = !isExisting;
+            document.getElementById('new_confirm_password').required = !isExisting;
+        }
+
+        function validateReceptionistForm() {
+            const isNew = document.getElementById('addNew').checked;
+            if (isNew) {
+                const password = document.getElementById('new_password').value;
+                const confirmPassword = document.getElementById('new_confirm_password').value;
+                const errorElement = document.getElementById('passwordError');
+
+                if (password !== confirmPassword) {
+                    errorElement.style.display = 'block';
+                    return false;
+                }
+                errorElement.style.display = 'none';
+            }
+            return true;
+        }
+
+        function resetAddForm() {
+            document.getElementById('addExisting').checked = true;
+            toggleAddType();
+            document.getElementById('passwordError').style.display = 'none';
+        }
+
+        function openShiftsModal(userId, receptionistName) {
+            document.getElementById('shiftReceptionistName').textContent = receptionistName;
+            document.getElementById('shiftsForm').action = `/clinic_admin/receptionists/shifts/${userId}`;
+            fetch(`/clinic_admin/receptionists/shifts/${userId}/get`).then(response => response.json()).then(data => {
+                document.querySelectorAll('input[name="days"]').forEach(cb => { cb.checked = false; const day = cb.value; document.getElementById(`start_${day}`).disabled = true; document.getElementById(`end_${day}`).disabled = true; document.getElementById(`start_${day}`).value = ''; document.getElementById(`end_${day}`).value = ''; });
+                data.shifts.forEach(shift => { const checkbox = document.getElementById(`day_${shift.day_of_week}`); if (checkbox) { checkbox.checked = true; document.getElementById(`start_${shift.day_of_week}`).disabled = false; document.getElementById(`end_${shift.day_of_week}`).disabled = false; document.getElementById(`start_${shift.day_of_week}`).value = shift.start_time; document.getElementById(`end_${shift.day_of_week}`).value = shift.end_time; } });
+            });
+            document.getElementById('shiftsModal').style.display = 'flex';
+        }
+
+        function closeShiftsModal() { document.getElementById('shiftsModal').style.display = 'none'; }
+
+        document.querySelectorAll('input[name="days"]').forEach(checkbox => { checkbox.addEventListener('change', function () { const day = this.value; const startInput = document.getElementById(`start_${day}`); const endInput = document.getElementById(`end_${day}`); if (this.checked) { startInput.disabled = false; endInput.disabled = false; if (!startInput.value) startInput.value = '09:00'; if (!endInput.value) endInput.value = '17:00'; } else { startInput.disabled = true; endInput.disabled = true; startInput.value = ''; endInput.value = ''; } }); });
+
+        function confirmRemove(userId, receptionistName) { document.getElementById('removeReceptionistName').textContent = receptionistName; document.getElementById('removeForm').action = `/clinic_admin/receptionists/remove/${userId}`; document.getElementById('removeModal').style.display = 'flex'; }
+        function closeRemoveModal() { document.getElementById('removeModal').style.display = 'none'; }
+
+        function openEditReceptionistModalSafe(button) {
+            const userId = button.getAttribute('data-id');
+            const fullName = button.getAttribute('data-name');
+            const email = button.getAttribute('data-email');
+            const phone = button.getAttribute('data-phone');
+
+            document.getElementById('editReceptionistForm').action = `/clinic_admin/receptionists/edit/${userId}`;
+            document.getElementById('edit_full_name').value = fullName;
+            document.getElementById('edit_email').value = email;
+            document.getElementById('edit_phone').value = phone;
+            document.getElementById('editReceptionistModal').style.display = 'flex';
+        }
+
+        function closeEditReceptionistModal() {
+            document.getElementById('editReceptionistModal').style.display = 'none';
+        }
+
+        window.onclick = function (event) { if (event.target.classList.contains('modal')) { event.target.style.display = 'none'; } }
+    </script>
+</body>
+
+</html>

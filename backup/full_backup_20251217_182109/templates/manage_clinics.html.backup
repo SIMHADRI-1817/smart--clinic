@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Clinics | CureConnect Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar-blue">
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Admin Panel</span>
+        </div>
+
+        <nav class="sidebar-menu">
+            <a href="{{ url_for('admin') }}" class="menu-item">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('manage_users') }}" class="menu-item">
+                <i class="fa-solid fa-users"></i>
+                <span>Manage Users</span>
+            </a>
+            <a href="{{ url_for('manage_clinics') }}" class="menu-item active">
+                <i class="fa-solid fa-hospital"></i>
+                <span>Manage Clinics</span>
+            </a>
+            <a href="{{ url_for('export_csv') }}" class="menu-item">
+                <i class="fa-solid fa-download"></i>
+                <span>Export Data</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-logout">
+            <a href="{{ url_for('logout') }}" class="menu-item">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+        <!-- Top Bar -->
+        <div class="admin-topbar">
+            <h1>Clinic Management</h1>
+            <div class="topbar-actions">
+                <button class="btn-add-clinic" onclick="openAddModal()">
+                    <i class="fa-solid fa-plus"></i> Add New Clinic
+                </button>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+                <i class="fa-solid fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Clinics Grid -->
+        <div class="clinics-grid-container">
+            {% if clinics %}
+            <div class="clinics-grid">
+                {% for clinic in clinics %}
+                <div class="clinic-card">
+                    <div class="clinic-card-header">
+                        <h3>{{ clinic['name'] }}</h3>
+                        <span class="status-badge status-{{ clinic['status'] or 'active' }}">
+                            <i class="fa-solid fa-circle"></i> {{ (clinic['status'] or 'active')|capitalize }}
+                        </span>
+                    </div>
+                    <div class="clinic-card-body">
+                        <div class="clinic-info-item">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <span>{{ clinic['address'] }}</span>
+                        </div>
+                        <div class="clinic-info-item">
+                            <i class="fa-solid fa-phone"></i>
+                            <span>{{ clinic['phone'] or 'N/A' }}</span>
+                        </div>
+                    </div>
+                    <div class="clinic-card-actions">
+                        <button class="btn-clinic-action edit"
+                            onclick="openEditModal({{ clinic['id'] }}, '{{ clinic['name'] }}', '{{ clinic['address'] }}', '{{ clinic['phone'] or '' }}')">
+                            <i class="fa-solid fa-edit"></i> Edit
+                        </button>
+                        <form method="POST" action="{{ url_for('toggle_clinic_status', clinic_id=clinic['id']) }}"
+                            style="display: inline;">
+                            <button type="submit" class="btn-clinic-action toggle">
+                                <i
+                                    class="fa-solid fa-{{ 'toggle-on' if clinic['status'] == 'active' else 'toggle-off' }}"></i>
+                                {{ 'Deactivate' if clinic['status'] == 'active' else 'Activate' }}
+                            </button>
+                        </form>
+                        <button class="btn-clinic-action delete"
+                            onclick="confirmDelete({{ clinic['id'] }}, '{{ clinic['name'] }}')">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-clinics">
+                <i class="fa-solid fa-hospital"></i>
+                <h3>No Clinics Found</h3>
+                <p>Click "Add New Clinic" to create your first clinic</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Add Clinic Modal -->
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fa-solid fa-edit"></i> Edit Clinic</h2>
+            <span class="modal-close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" method="POST">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="edit_name"><i class="fa-solid fa-hospital"></i> Clinic Name *</label>
+                    <input type="text" id="edit_name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_address"><i class="fa-solid fa-location-dot"></i> Address *</label>
+                    <textarea id="edit_address" name="address" required rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit_phone"><i class="fa-solid fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="edit_phone" name="phone">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fa-solid fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-exclamation-triangle"></i> Confirm Delete</h2>
+                <span class="modal-close" onclick="closeDeleteModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteClinicName"></strong>?</p>
+                <p class="warning-text">This action cannot be undone.</p>
+            </div>
+            <form id="deleteForm" method="POST">
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn-danger">
+                        <i class="fa-solid fa-trash"></i> Delete Clinic
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Add Modal
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'flex';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+
+        // Edit Modal
+        function openEditModal(id, name, address, phone) {
+            document.getElementById('editForm').action = `/edit_clinic/${id}`;
+            document.getElementById('edit_name').value = name;
+            document.getElementById('edit_address').value = address;
+            document.getElementById('edit_phone').value = phone;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Delete Modal
+        function confirmDelete(id, name) {
+            document.getElementById('deleteForm').action = `/delete_clinic/${id}`;
+            document.getElementById('deleteClinicName').textContent = name;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function (event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>

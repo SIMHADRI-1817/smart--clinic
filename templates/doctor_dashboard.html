@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard | CureConnect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="doctor-layout">
+    <!-- Sidebar -->
+    <aside class="patient-sidebar" style="background: linear-gradient(180deg, #0ea5e9 0%, #0ea5e9 100%);">
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-user-doctor"></i>
+            <span>Doctor Panel</span>
+        </div>
+
+        <div class="user-profile-patient">
+            <div class="user-avatar-patient">{{ user['full_name'][0] if user else 'D' }}</div>
+            <div class="user-info-patient">
+                <div class="user-name-patient">{{ user['full_name'] if user else 'Dr. Smith' }}</div>
+                <div class="user-role-patient">Doctor</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-menu-patient">
+            <a href="{{ url_for('doctor_dashboard') }}" class="menu-item-patient active">
+                <i class="fa-regular fa-calendar-check"></i>
+                <span>My Schedule</span>
+            </a>
+            <a href="{{ url_for('doctor_patients') }}" class="menu-item-patient">
+                <i class="fa-solid fa-users"></i>
+                <span>Patient Records</span>
+            </a>
+            <a href="{{ url_for('doctor_prescriptions') }}" class="menu-item-patient">
+                <i class="fa-solid fa-prescription-bottle-medical"></i>
+                <span>Prescriptions</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-logout-patient">
+            <a href="{{ url_for('logout') }}" class="logout-btn-patient">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="patient-content">
+        <div class="patient-header">
+            <h1>Doctor Dashboard</h1>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="patient-stats-grid">
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Today's Appointments</div>
+                <div class="stat-number-patient">{{ appointments|length }}</div>
+            </div>
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Total Patients</div>
+                <div class="stat-number-patient">{{ total_patients }}</div>
+            </div>
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Total Prescriptions</div>
+                <div class="stat-number-patient">{{ total_prescriptions }}</div>
+            </div>
+        </div>
+
+        <!-- Today's Appointments -->
+        <div class="patient-section">
+            <h3>Today's Appointments</h3>
+            <div class="appointments-list-patient">
+                {% if appointments %}
+                {% for appt in appointments %}
+                <div class="appointment-card-patient">
+                    <div class="appointment-date-patient">
+                        <div class="date-day">{{ appt['time'].split(':')[0] }}</div>
+                        <div class="date-month">{{ appt['time'].split(':')[1] }}</div>
+                    </div>
+                    <div class="appointment-details-patient">
+                        <div class="appointment-title-patient">{{ appt['patient_name'] }}</div>
+                        <div class="appointment-time-patient">
+                            <i class="fa-regular fa-clock"></i> {{ appt['time'] }}
+                        </div>
+                        <div class="appointment-clinic-patient"
+                            style="font-size: 0.85rem; color: #666; margin-top: 4px;">
+                            <i class="fa-solid fa-notes-medical"></i> {{ appt['reason'] }}
+                        </div>
+                    </div>
+                    <div class="appointment-status-patient">
+                        {% if appt.get('is_current') %}
+                        <span class="status-badge status-in_progress">In Consultation</span>
+                        {% elif appt.get('is_waiting') %}
+                        <span class="status-badge status-pending" style="background: #eab308; color: white;">Waiting in
+                            Lobby</span>
+                        {% else %}
+                        <span class="status-badge status-{{ appt['status']|lower }}">{{ appt['status']|capitalize
+                            }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="appointment-actions-patient" style="margin-left: auto;">
+                        {% if appt['status'] != 'completed' and appt['status'] != 'cancelled' and appt['status'] !=
+                        'no_show' and not appt.get('is_waiting') %}
+                        <form action="{{ url_for('complete_appointment', appointment_id=appt['id']) }}" method="POST"
+                            style="display: inline;">
+                            <button type="submit" class="btn-icon edit" style="color: #059669;"
+                                title="Mark as Completed"
+                                onclick="return confirm('Are you sure you want to mark this appointment as completed?')">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state-patient">
+                    <i class="fa-regular fa-calendar-check"></i>
+                    <p>No appointments scheduled for today</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

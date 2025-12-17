@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users | CureConnect Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .btn-action.edit-user {
+            background-color: #f39c12;
+            color: white;
+            margin-left: 5px;
+        }
+
+        .action-buttons-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-action.delete-user {
+            background-color: #e74c3c;
+            color: white;
+            margin-left: 5px;
+        }
+
+        .btn-action.edit-user:hover {
+            background-color: #d68910;
+        }
+
+        .btn-action.delete-user:hover {
+            background-color: #c0392b;
+        }
+
+        .delete-user-form {
+            display: inline-flex;
+            margin: 0;
+            margin-left: 5px;
+        }
+
+        /* Fix table header visibility */
+        .users-table th {
+            color: white !important;
+            background-color: #1c2e4a;
+            /* Ensure dark background */
+        }
+    </style>
+</head>
+
+<body class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar-blue">
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Admin Panel</span>
+        </div>
+
+        <nav class="sidebar-menu">
+            <a href="{{ url_for('admin') }}" class="menu-item">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('manage_users') }}" class="menu-item active">
+                <i class="fa-solid fa-users"></i>
+                <span>Manage Users</span>
+            </a>
+            <a href="#" class="menu-item">
+                <i class="fa-solid fa-hospital"></i>
+                <span>Manage Clinics</span>
+            </a>
+            <a href="{{ url_for('export_csv') }}" class="menu-item">
+                <i class="fa-solid fa-download"></i>
+                <span>Export Data</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-logout">
+            <a href="{{ url_for('logout') }}" class="menu-item">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+        <!-- Top Bar -->
+        <div class="admin-topbar">
+            <h1>User Management</h1>
+            <div class="topbar-actions">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search users...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="user-filter-tabs">
+            <a href="{{ url_for('manage_users', role='all') }}"
+                class="filter-tab {% if role_filter == 'all' %}active{% endif %}">
+                <i class="fa-solid fa-users"></i>
+                <span>All Users</span>
+                <span class="tab-count">{{ total_users }}</span>
+            </a>
+            <a href="{{ url_for('manage_users', role='doctor') }}"
+                class="filter-tab {% if role_filter == 'doctor' %}active{% endif %}">
+                <i class="fa-solid fa-user-doctor"></i>
+                <span>Doctors</span>
+                <span class="tab-count">{{ doctors_count }}</span>
+            </a>
+            <a href="{{ url_for('manage_users', role='patient') }}"
+                class="filter-tab {% if role_filter == 'patient' %}active{% endif %}">
+                <i class="fa-solid fa-hospital-user"></i>
+                <span>Patients</span>
+                <span class="tab-count">{{ patients_count }}</span>
+            </a>
+            <a href="{{ url_for('manage_users', role='reception') }}"
+                class="filter-tab {% if role_filter == 'reception' %}active{% endif %}">
+                <i class="fa-solid fa-headset"></i>
+                <span>Receptionists</span>
+                <span class="tab-count">{{ receptionists_count }}</span>
+            </a>
+            <a href="{{ url_for('manage_users', role='clinic_admin') }}"
+                class="filter-tab {% if role_filter == 'clinic_admin' %}active{% endif %}">
+                <i class="fa-solid fa-user-nurse"></i>
+                <span>Clinic Admins</span>
+                <span class="tab-count">{{ clinic_admins_count }}</span>
+            </a>
+            <a href="{{ url_for('manage_users', role='admin') }}"
+                class="filter-tab {% if role_filter == 'admin' %}active{% endif %}">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Super Admins</span>
+                <span class="tab-count">{{ admins_count }}</span>
+            </a>
+        </div>
+
+        <!-- Users Table -->
+        <div class="users-table-container">
+            <table class="users-table" id="usersTable">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users %}
+                    {% for user_item in users %}
+                    <tr class="user-row"
+                        data-search="{{ user_item['full_name']|lower }} {{ user_item['username']|lower }} {{ user_item['email']|lower }} {{ user_item['phone']|lower }}">
+                        <td>
+                            <div class="user-info-cell">
+                                <div class="user-avatar-small">{{ user_item['full_name'][0] if user_item['full_name']
+                                    else 'U' }}</div>
+                                <div class="user-details">
+                                    <div class="user-name-bold">{{ user_item['full_name'] or 'N/A' }}</div>
+                                    <div class="user-id-small">ID: {{ user_item['id'] }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user_item['username'] }}</td>
+                        <td>{{ user_item['email'] or 'N/A' }}</td>
+                        <td>{{ user_item['phone'] or 'N/A' }}</td>
+                        <td>
+                            <span class="role-badge role-{{ user_item['role'] }}">
+                                {% if user_item['role'] == 'admin' %}
+                                <i class="fa-solid fa-user-shield"></i> Admin
+                                {% elif user_item['role'] == 'doctor' %}
+                                <i class="fa-solid fa-user-doctor"></i> Doctor
+                                {% elif user_item['role'] == 'clinic_admin' %}
+                                <i class="fa-solid fa-user-nurse"></i> Clinic Admin
+                                {% elif user_item['role'] == 'reception' %}
+                                <i class="fa-solid fa-headset"></i> Receptionist
+                                {% else %}
+                                <i class="fa-solid fa-hospital-user"></i> Patient
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons-container">
+                                <button class="btn-action view-details" data-id="{{ user_item['id'] }}"
+                                    data-fullname="{{ user_item['full_name'] }}"
+                                    data-username="{{ user_item['username'] }}" data-email="{{ user_item['email'] }}"
+                                    data-phone="{{ user_item['phone'] }}" data-role="{{ user_item['role'] }}"
+                                    onclick="viewUserDetails(this)">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </button>
+                                {% if user['role'] == 'admin' %}
+                                <button class="btn-action edit-user" data-id="{{ user_item['id'] }}"
+                                    data-fullname="{{ user_item['full_name'] }}" data-email="{{ user_item['email'] }}"
+                                    data-phone="{{ user_item['phone'] }}" data-role="{{ user_item['role'] }}"
+                                    onclick="openEditUserModal(this)">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </button>
+                                <form action="{{ url_for('delete_user', user_id=user_item['id']) }}" method="POST"
+                                    class="delete-user-form"
+                                    onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
+                                    <button type="submit" class="btn-action delete-user">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="no-users">
+                            <i class="fa-solid fa-users-slash"></i>
+                            <p>No users found</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- User Details Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>User Details</h2>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit User Details</h2>
+                <span class="modal-close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm" method="POST">
+                    <div class="form-group">
+                        <label for="edit_full_name"><i class="fa-solid fa-user"></i> Full Name</label>
+                        <input type="text" id="edit_full_name" name="full_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_email"><i class="fa-solid fa-envelope"></i> Email</label>
+                        <input type="email" id="edit_email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_phone"><i class="fa-solid fa-phone"></i> Phone Number</label>
+                        <input type="tel" id="edit_phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_role"><i class="fa-solid fa-user-tag"></i> Role</label>
+                        <select id="edit_role" name="role" required>
+                            <option value="patient">Patient</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="reception">Receptionist</option>
+                            <option value="clinic_admin">Clinic Admin</option>
+                            <option value="admin">Super Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 15px;">Unique Update
+                        User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.user-row');
+
+            rows.forEach(row => {
+                const searchData = row.getAttribute('data-search');
+                if (searchData.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // View user details
+        function viewUserDetails(btn) {
+            const { id, fullname, username, email, phone, role } = btn.dataset;
+            const modal = document.getElementById('userModal');
+            const modalBody = document.getElementById('modalBody');
+
+            const roleIcons = {
+                'admin': '<i class="fa-solid fa-user-shield"></i> Super Admin',
+                'clinic_admin': '<i class="fa-solid fa-user-nurse"></i> Clinic Admin',
+                'doctor': '<i class="fa-solid fa-user-doctor"></i> Doctor',
+                'reception': '<i class="fa-solid fa-headset"></i> Receptionist',
+                'patient': '<i class="fa-solid fa-hospital-user"></i> Patient'
+            };
+
+            modalBody.innerHTML = `
+                <div class="user-detail-grid">
+                    <div class="detail-item">
+                        <label><i class="fa-solid fa-id-card"></i> User ID</label>
+                        <p>${id}</p>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fa-solid fa-user"></i> Full Name</label>
+                        <p>${fullname || 'N/A'}</p>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fa-solid fa-at"></i> Username</label>
+                        <p>${username}</p>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fa-solid fa-envelope"></i> Email</label>
+                        <p>${email === 'None' ? 'N/A' : email}</p>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fa-solid fa-phone"></i> Phone Number</label>
+                        <p>${phone === 'None' ? 'N/A' : phone}</p>
+                    </div>
+                    <div class="detail-item">
+                        <label><i class="fa-solid fa-user-tag"></i> Role</label>
+                        <p><span class="role-badge role-${role}">${roleIcons[role]}</span></p>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+
+        // Open edit modal
+        function openEditUserModal(btn) {
+            const { id, fullname, email, phone, role } = btn.dataset;
+            const modal = document.getElementById('editUserModal');
+            const form = document.getElementById('editUserForm');
+
+            // Set form action
+            form.action = `/edit_user/${id}`;
+
+            // Populate fields
+            document.getElementById('edit_full_name').value = fullname;
+            document.getElementById('edit_email').value = email === 'None' ? '' : email;
+            document.getElementById('edit_phone').value = phone === 'None' ? '' : phone;
+            document.getElementById('edit_role').value = role;
+
+            modal.style.display = 'flex';
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const modal = document.getElementById('userModal');
+            const editModal = document.getElementById('editUserModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+            if (event.target == editModal) {
+                editModal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>

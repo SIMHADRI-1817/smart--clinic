@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CureConnect | Healthcare Excellence</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+  <header class="navbar">
+    <div class="logo">
+      <i class="fa-solid fa-staff-snake"></i> CureConnect <span class="logo-sub">Healthcare Excellence</span>
+    </div>
+    <nav>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="#">Doctors</a>
+      <a href="{{ url_for('about') }}">About Us</a>
+      {% if user %}
+      {% if user['role'] == 'admin' %}
+      <a href="{{ url_for('admin') }}">Dashboard</a>
+      {% elif user['role'] == 'reception' %}
+      <a href="{{ url_for('reception') }}">Dashboard</a>
+      {% else %}
+      <a href="{{ url_for('patient_dashboard') }}">Dashboard</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}" class="btn-danger">Logout</a>
+      {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('register') }}" class="btn btn-primary">Sign Up</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-modern">
+    <div class="hero-container">
+      <!-- Left Content -->
+      <div class="hero-content">
+        <!-- Animated Badge -->
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span class="badge-text">HIPAA Compliant & Secure Platform</span>
+        </div>
+
+        <!-- Main Heading -->
+        <h1 class="hero-title">
+          Your Health Journey,
+          <span class="hero-gradient-text">Simplified & Secure</span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="hero-subtitle">
+          Connect with top healthcare professionals, manage appointments seamlessly, and access your medical records
+          securely - all in one intelligent platform designed for modern healthcare.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="hero-cta">
+          <a href="{{ url_for('booking') }}" class="btn-hero-primary">
+            <i class="fa-regular fa-calendar-check"></i>
+            <span>Book Appointment</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </a>
+          <a href="#services" class="btn-hero-secondary">
+            <i class="fa-solid fa-play-circle"></i>
+            <span>Explore Services</span>
+          </a>
+        </div>
+
+        <!-- Trust Indicators -->
+        <div class="hero-trust">
+          <div class="trust-item">
+            <div class="trust-icon">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="trust-text">
+              <strong>Bank-Level Security</strong>
+              <span>256-bit encryption</span>
+            </div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+            <div class="trust-text">
+              <strong>500+ Specialists</strong>
+              <span>Board certified</span>
+            </div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div class="trust-text">
+              <strong>24/7 Available</strong>
+              <span>Always here for you</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="hero-stats-bar">
+          <div class="stat-bar-item">
+            <h3 class="stat-number">50K+</h3>
+            <p class="stat-label">Happy Patients</p>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-bar-item">
+            <h3 class="stat-number">98%</h3>
+            <p class="stat-label">Satisfaction Rate</p>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-bar-item">
+            <h3 class="stat-number">100K+</h3>
+            <p class="stat-label">Appointments</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Visual -->
+      <div class="hero-visual">
+        <div class="hero-image-wrapper">
+          <div class="hero-image-bg"></div>
+          <img src="{{ url_for('static', filename='images/team-doctors.jpg') }}" alt="Healthcare Professionals"
+            class="hero-image">
+
+          <!-- Floating Cards -->
+          <div class="floating-card card-1">
+            <div class="card-icon">
+              <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <div class="card-content">
+              <strong>Real-time Monitoring</strong>
+              <span>Track your health 24/7</span>
+            </div>
+          </div>
+
+          <div class="floating-card card-2">
+            <div class="card-icon green">
+              <i class="fa-solid fa-check-circle"></i>
+            </div>
+            <div class="card-content">
+              <strong>Instant Booking</strong>
+              <span>Get appointments in seconds</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decorative Elements -->
+    <div class="hero-decoration decoration-1"></div>
+    <div class="hero-decoration decoration-2"></div>
+  </section>
+
+  <!-- Comprehensive Healthcare Solutions -->
+  <section class="solutions" id="services">
+    <div class="section-header">
+      <span class="badge-outline">Our Services</span>
+      <h2>Comprehensive Healthcare Solutions</h2>
+      <p>Experience seamless healthcare management with our integrated platform designed for modern patients.</p>
+    </div>
+
+    <div class="solutions-grid">
+      <div class="solution-card">
+        <div class="icon-box"><i class="fa-regular fa-calendar-days"></i></div>
+        <h3>Smart Appointment Booking</h3>
+        <p>AI-powered scheduling system that finds the perfect time slot with your preferred specialist.</p>
+      </div>
+      <div class="solution-card">
+        <div class="icon-box"><i class="fa-solid fa-video"></i></div>
+        <h3>Virtual Consultations</h3>
+        <p>High-quality video consultations with board-certified physicians from anywhere.</p>
+      </div>
+      <div class="solution-card">
+        <div class="icon-box"><i class="fa-solid fa-file-medical"></i></div>
+        <h3>Digital Health Records</h3>
+        <p>Secure, encrypted access to your complete medical history and test results.</p>
+      </div>
+      <div class="solution-card">
+        <div class="icon-box"><i class="fa-solid fa-clock"></i></div>
+        <h3>24/7 Medical Support</h3>
+        <p>Round-the-clock access to healthcare professionals and emergency guidance.</p>
+      </div>
+      <div class="solution-card">
+        <div class="icon-box"><i class="fa-solid fa-stethoscope"></i></div>
+        <h3>Specialist Network</h3>
+        <p>Connect with over 500 specialists across 50+ medical departments.</p>
+      </div>
+      <div class="solution-card">
+        <div class="icon-box"><i class="fa-solid fa-truck-medical"></i></div>
+        <h3>Emergency Response</h3>
+        <p>Rapid emergency services with GPS-tracked ambulances and instant medical assistance.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Banner -->
+  <section class="stats-banner">
+    <div class="stat-box">
+      <h3>50,000+</h3>
+      <p>Active Patients</p>
+    </div>
+    <div class="stat-box">
+      <h3>500+</h3>
+      <p>Expert Doctors</p>
+    </div>
+    <div class="stat-box">
+      <h3>100,000+</h3>
+      <p>Successful Treatments</p>
+    </div>
+    <div class="stat-box">
+      <h3>98%</h3>
+      <p>Patient Satisfaction</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-col">
+        <h4>CureConnect</h4>
+        <p>Transforming healthcare delivery through innovative technology and compassionate care. Your health, our
+          priority.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">Find Doctors</a></li>
+          <li><a href="{{ url_for('about') }}">About Us</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Our Services</h4>
+        <ul>
+          <li><a href="#">Book Appointment</a></li>
+          <li><a href="#">Digital Records</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Stay Updated with Health Tips</h4>
+        <p>Subscribe to our newsletter for the latest healthcare insights and updates.</p>
+        <div class="newsletter">
+          <input type="email" placeholder="Enter your email">
+          <button>Subscribe</button>
+        </div>
+        <div class="contact-info">
+          <p><i class="fa-solid fa-location-dot"></i> 123 Healthcare Avenue, Medical District, NY 10001</p>
+          <p><i class="fa-solid fa-phone"></i> 1-800-CureConnect</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 CureConnect. All Rights Reserved.</p>
+    </div>
+  </footer>
+</body>
+
+</html>

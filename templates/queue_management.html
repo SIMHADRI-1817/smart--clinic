@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Management | CureConnect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="reception-page">
+    <div class="reception-layout">
+        <!-- Sidebar -->
+        <aside class="reception-sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-user-nurse"></i>
+                <span>Receptionist</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('reception') }}" class="sidebar-link">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('queue_management') }}" class="sidebar-link active">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Queue Management</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="sidebar-link logout-link">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="reception-main">
+            <div class="reception-header">
+                <h1>Receptionist Dashboard</h1>
+            </div>
+
+            <!-- Live Queue Section -->
+            <div class="live-queue-section">
+                <div class="live-queue-header">
+                    <h2>Live Queue</h2>
+                    <button class="refresh-btn" onclick="location.reload()">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <!-- Now Serving Card -->
+                {% if now_serving %}
+                <div class="now-serving-card">
+                    <div class="now-serving-label">Now Serving</div>
+                    <div class="now-serving-number">{{ now_serving.queue_number }}</div>
+                    <div class="now-serving-info">{{ now_serving.room }} - {{ now_serving.doctor_name }}</div>
+                </div>
+                {% else %}
+                <div class="now-serving-card">
+                    <div class="now-serving-label">Now Serving</div>
+                    <div class="now-serving-number">--</div>
+                    <div class="now-serving-info">No patients currently being served</div>
+                </div>
+                {% endif %}
+
+                <!-- Queue Sections -->
+                <div class="queue-sections">
+                    <!-- In Progress -->
+                    <div class="queue-section">
+                        <h3 class="queue-section-title">In Progress</h3>
+                        <div class="queue-list">
+                            {% if in_progress %}
+                            {% for patient in in_progress %}
+                            <div class="queue-item queue-item-progress">
+                                <div class="queue-item-number">A-{{ '%02d'|format(patient.queue_number) }}</div>
+                                <div class="queue-item-details">
+                                    <div class="queue-item-name">{{ patient.patient_name }}</div>
+                                    <div class="queue-item-meta">{{ patient.room }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="queue-empty">No patients in progress</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Up Next -->
+                    <div class="queue-section">
+                        <h3 class="queue-section-title">Up Next ({{ up_next|length }} patients)</h3>
+                        <div class="queue-list">
+                            {% if up_next %}
+                            {% for patient in up_next %}
+                            <div class="queue-item queue-item-waiting">
+                                <div class="queue-item-number">A-{{ '%02d'|format(patient.queue_number) }}</div>
+                                <div class="queue-item-details">
+                                    <div class="queue-item-name">{{ patient.patient_name }}</div>
+                                    <div class="queue-item-meta">Wait: {{ patient.wait_time }} min</div>
+                                </div>
+                                <div class="queue-item-actions">
+                                    <a href="{{ url_for('checkin', appointment_id=patient.id) }}"
+                                        class="btn-check-in-small">
+                                        <i class="fa-solid fa-user-check"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="queue-empty">No patients waiting</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Appointments List -->
+            <div class="live-queue-section" style="margin-top: 40px;">
+                <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 20px; color: var(--color-text-dark);">
+                    Today's Appointments</h2>
+
+                <div class="queue-section" style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #f3f4f6; text-align: left;">
+                                <th style="padding: 16px; color: var(--color-text-light); font-weight: 600;">Time</th>
+                                <th style="padding: 16px; color: var(--color-text-light); font-weight: 600;">Patient
+                                </th>
+                                <th style="padding: 16px; color: var(--color-text-light); font-weight: 600;">Doctor</th>
+                                <th style="padding: 16px; color: var(--color-text-light); font-weight: 600;">Status</th>
+                                <th style="padding: 16px; color: var(--color-text-light); font-weight: 600;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if all_appointments %}
+                            {% for appt in all_appointments %}
+                            <tr style="border-bottom: 1px solid #f3f4f6;">
+                                <td style="padding: 16px; font-weight: 500;">{{ appt.time }}</td>
+                                <td style="padding: 16px; font-weight: 600; color: var(--color-text-dark);">{{
+                                    appt.patient_name }}</td>
+                                <td style="padding: 16px;">{{ appt.doctor_name }}</td>
+                                <td style="padding: 16px;">
+                                    {% if appt.status == 'checked_in' %}
+                                    <span
+                                        style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 99px; font-size: 0.875rem; font-weight: 500;">Checked
+                                        In</span>
+                                    {% elif appt.status == 'pending' %}
+                                    <span
+                                        style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 99px; font-size: 0.875rem; font-weight: 500;">Pending</span>
+                                    {% else %}
+                                    <span
+                                        style="background: #f3f4f6; color: #374151; padding: 4px 12px; border-radius: 99px; font-size: 0.875rem; font-weight: 500;">{{
+                                        appt.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 16px;">
+                                    {% if appt.status == 'pending' %}
+                                    <div style="display: flex; gap: 8px;">
+                                        <a href="{{ url_for('checkin', appointment_id=appt.id) }}"
+                                            style="background: #0891B2; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.875rem; text-decoration: none; display: inline-block; transition: background 0.2s;"
+                                            title="Check In">
+                                            <i class="fa-solid fa-check"></i>
+                                        </a>
+                                        <button
+                                            onclick="openRescheduleModal('{{ appt.id }}', '{{ appt.date }}', '{{ appt.time }}')"
+                                            style="background: #eab308; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.875rem; cursor: pointer;"
+                                            title="Reschedule">
+                                            <i class="fa-solid fa-calendar-days"></i>
+                                        </button>
+                                        <button
+                                            onclick="callPatient('{{ appt.patient_name }}', '{{ appt.patient_phone }}')"
+                                            style="background: #22c55e; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.875rem; cursor: pointer;"
+                                            title="Call Patient">
+                                            <i class="fa-solid fa-phone"></i>
+                                        </button>
+                                    </div>
+                                    {% else %}
+                                    <button disabled
+                                        style="background: #e5e7eb; color: #9ca3af; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; cursor: not-allowed;">
+                                        Check In
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="5"
+                                    style="padding: 32px; text-align: center; color: var(--color-text-light);">No
+                                    appointments scheduled for today</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Reschedule Modal -->
+    <div id="rescheduleModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 24px; border-radius: 12px; width: 100%; max-width: 400px;">
+            <h3 style="margin-top: 0; margin-bottom: 16px;">Reschedule Appointment</h3>
+            <form action="{{ url_for('reschedule_appointment') }}" method="POST">
+                <input type="hidden" id="resch_appt_id" name="appointment_id">
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">New Date</label>
+                    <input type="date" id="resch_date" name="new_date"
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;" required>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">New Time</label>
+                    <input type="time" id="resch_time" name="new_time"
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;" required>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" onclick="closeRescheduleModal()"
+                        style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer;">Cancel</button>
+                    <button type="submit"
+                        style="padding: 8px 16px; background: #0891B2; color: white; border: none; border-radius: 6px; cursor: pointer;">Save
+                        Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openRescheduleModal(id, date, time) {
+            document.getElementById('resch_appt_id').value = id;
+            document.getElementById('resch_date').value = date;
+            document.getElementById('resch_time').value = time;
+            document.getElementById('rescheduleModal').style.display = 'flex';
+        }
+
+        function closeRescheduleModal() {
+            document.getElementById('rescheduleModal').style.display = 'none';
+        }
+
+        function callPatient(name, phone) {
+            if (!phone || phone === 'None') {
+                alert('No phone number available for ' + name);
+            } else {
+                alert('Calling ' + name + ' at ' + phone + '...');
+                // In a real app, this could integrate with a VoIP dialer
+                window.location.href = 'tel:' + phone;
+            }
+        }
+    </script>
+</body>
+
+</html>

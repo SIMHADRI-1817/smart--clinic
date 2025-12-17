@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Prescription | Doctor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #0ea5e9;
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+            color: white;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-submit:hover {
+            opacity: 0.9;
+        }
+
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #666;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+
+<body class="doctor-layout">
+    <aside class="patient-sidebar" style="background: linear-gradient(180deg, #0ea5e9 0%, #0ea5e9 100%);">
+        <div class="sidebar-brand"><i class="fa-solid fa-user-doctor"></i><span>Doctor Panel</span></div>
+        <div class="user-profile-patient">
+            <div class="user-avatar-patient">{{ user['full_name'][0] if user else 'D' }}</div>
+            <div class="user-info-patient">
+                <div class="user-name-patient">{{ user['full_name'] if user else 'Dr. Smith' }}</div>
+                <div class="user-role-patient">Doctor</div>
+            </div>
+        </div>
+        <nav class="sidebar-menu-patient">
+            <a href="{{ url_for('doctor_dashboard') }}" class="menu-item-patient"><i
+                    class="fa-regular fa-calendar-check"></i><span>My Schedule</span></a>
+            <a href="{{ url_for('doctor_patients') }}" class="menu-item-patient"><i
+                    class="fa-solid fa-users"></i><span>Patient Records</span></a>
+            <a href="{{ url_for('doctor_prescriptions') }}" class="menu-item-patient active"><i
+                    class="fa-solid fa-prescription-bottle-medical"></i><span>Prescriptions</span></a>
+        </nav>
+        <div class="sidebar-logout-patient"><a href="{{ url_for('logout') }}" class="logout-btn-patient"><i
+                    class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></div>
+    </aside>
+
+    <main class="patient-content">
+        <div class="patient-header">
+            <h1><i class="fa-solid fa-prescription"></i> Write New Prescription</h1>
+        </div>
+
+        <div class="form-container">
+            {% if success %}
+            <div class="alert alert-success">
+                <i class="fa-solid fa-check-circle"></i> Prescription created successfully!
+            </div>
+            {% endif %}
+
+            {% if error %}
+            <div class="alert alert-error">
+                <i class="fa-solid fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('doctor_add_prescription') }}">
+                <div class="form-group">
+                    <label class="form-label" for="patient_id">Patient *</label>
+                    <select class="form-select" id="patient_id" name="patient_id" required>
+                        <option value="">Select a patient...</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient['id'] }}" {% if selected_patient_id==patient['id'] %}selected{% endif
+                            %}>
+                            {{ patient['full_name'] }} ({{ patient['email'] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="medication_name">Medication Name *</label>
+                    <input type="text" class="form-input" id="medication_name" name="medication_name"
+                        placeholder="e.g., Amoxicillin" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="dosage">Dosage *</label>
+                        <input type="text" class="form-input" id="dosage" name="dosage" placeholder="e.g., 500mg"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="frequency">Frequency *</label>
+                        <input type="text" class="form-input" id="frequency" name="frequency"
+                            placeholder="e.g., Twice daily" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="duration">Duration *</label>
+                        <input type="text" class="form-input" id="duration" name="duration" placeholder="e.g., 7 days"
+                            required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="instructions">Instructions</label>
+                    <textarea class="form-textarea" id="instructions" name="instructions"
+                        placeholder="e.g., Take after meals. Avoid alcohol."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="status">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="active" selected>Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="end_date">End Date (Optional)</label>
+                        <input type="date" class="form-input" id="end_date" name="end_date">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="fa-solid fa-prescription-bottle-medical"></i> Create Prescription
+                </button>
+                <button type="button" class="btn-cancel"
+                    onclick="window.location.href='{{ url_for('doctor_prescriptions') }}'">
+                    Cancel
+                </button>
+            </form>
+        </div>
+    </main>
+</body>
+
+</html>

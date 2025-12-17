@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us | CureConnect</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="logo">
+      <i class="fa-solid fa-staff-snake"></i> CureConnect <span class="logo-sub">Healthcare Excellence</span>
+    </div>
+    <nav>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="#">Doctors</a>
+      <a href="{{ url_for('about') }}" class="active">About Us</a>
+      {% if user %}
+      {% if user['role'] == 'admin' %}
+      <a href="{{ url_for('admin') }}">Dashboard</a>
+      {% elif user['role'] == 'reception' %}
+      <a href="{{ url_for('reception') }}">Dashboard</a>
+      {% else %}
+      <a href="{{ url_for('patient_dashboard') }}">Dashboard</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}" class="btn-danger">Logout</a>
+      {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('register') }}" class="btn btn-primary">Sign Up</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="about-hero-modern">
+    <div class="about-hero-overlay"></div>
+    <div class="about-hero-content-modern">
+      <div class="about-badge">
+        <i class="fa-solid fa-award"></i> Trusted Healthcare Partner Since 2020
+      </div>
+      <h1 class="about-hero-title-modern">Transforming Healthcare,<br><span class="gradient-text">One Life at a
+          Time</span></h1>
+      <p class="about-hero-subtitle-modern">We're on a mission to make healthcare accessible, efficient, and
+        patient-centered through innovative technology and compassionate care.</p>
+      <div class="about-hero-stats">
+        <div class="hero-stat-item">
+          <div class="hero-stat-number">50K+</div>
+          <div class="hero-stat-label">Happy Patients</div>
+        </div>
+        <div class="hero-stat-item">
+          <div class="hero-stat-number">500+</div>
+          <div class="hero-stat-label">Expert Doctors</div>
+        </div>
+        <div class="hero-stat-item">
+          <div class="hero-stat-number">98%</div>
+          <div class="hero-stat-label">Satisfaction Rate</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mission & Vision Section -->
+  <section class="mission-vision-section">
+    <div class="container-modern">
+      <div class="mission-vision-grid">
+        <div class="mission-card">
+          <div class="mission-icon">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <h2>Our Mission</h2>
+          <p>To revolutionize healthcare delivery by creating an intelligent, patient-first platform that connects
+            people with the right care at the right time. We believe healthcare should be simple, accessible, and
+            stress-free.</p>
+          <div class="mission-features">
+            <div class="feature-item">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Patient-Centered Care</span>
+            </div>
+            <div class="feature-item">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Seamless Experience</span>
+            </div>
+            <div class="feature-item">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Advanced Technology</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="vision-card">
+          <div class="vision-icon">
+            <i class="fa-solid fa-lightbulb"></i>
+          </div>
+          <h2>Our Vision</h2>
+          <p>To become the world's most trusted healthcare platform, where every patient receives personalized,
+            high-quality care powered by cutting-edge technology and delivered with genuine compassion.</p>
+          <div class="vision-features">
+            <div class="feature-item">
+              <i class="fa-solid fa-star"></i>
+              <span>Global Healthcare Leader</span>
+            </div>
+            <div class="feature-item">
+              <i class="fa-solid fa-star"></i>
+              <span>Innovation-Driven</span>
+            </div>
+            <div class="feature-item">
+              <i class="fa-solid fa-star"></i>
+              <span>Compassionate Service</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Values Section -->
+  <section class="values-section-modern">
+    <div class="container-modern">
+      <div class="section-header-center">
+        <span class="badge-outline">What We Stand For</span>
+        <h2>Our Core Values</h2>
+        <p>The principles that guide everything we do</p>
+      </div>
+
+      <div class="values-grid-modern">
+        <div class="value-card-modern">
+          <div class="value-icon-modern">
+            <i class="fa-solid fa-heart"></i>
+          </div>
+          <h3>Compassion</h3>
+          <p>We treat every patient with empathy, respect, and genuine care, understanding that behind every appointment
+            is a person seeking help.</p>
+        </div>
+
+        <div class="value-card-modern">
+          <div class="value-icon-modern">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <h3>Trust & Security</h3>
+          <p>Your health data is sacred. We employ industry-leading encryption and security protocols to protect your
+            privacy at all times.</p>
+        </div>
+
+        <div class="value-card-modern">
+          <div class="value-icon-modern">
+            <i class="fa-solid fa-rocket"></i>
+          </div>
+          <h3>Innovation</h3>
+          <p>We constantly push boundaries to find better, smarter ways to deliver healthcare services efficiently and
+            effectively.</p>
+        </div>
+
+        <div class="value-card-modern">
+          <div class="value-icon-modern">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <h3>Collaboration</h3>
+          <p>We work hand-in-hand with healthcare providers, patients, and communities to build solutions that work for
+            everyone.</p>
+        </div>
+
+        <div class="value-card-modern">
+          <div class="value-icon-modern">
+            <i class="fa-solid fa-medal"></i>
+          </div>
+          <h3>Excellence</h3>
+          <p>We're committed to the highest standards of quality in every aspect of our service, from technology to
+            patient care.</p>
+        </div>
+
+        <div class="value-card-modern">
+          <div class="value-icon-modern">
+            <i class="fa-solid fa-handshake"></i>
+          </div>
+          <h3>Accessibility</h3>
+          <p>Healthcare is a right, not a privilege. We strive to make quality healthcare accessible to everyone,
+            everywhere.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team Section -->
+  <section class="team-section-modern">
+    <div class="container-modern">
+      <div class="section-header-center">
+        <span class="badge-outline">Meet the Experts</span>
+        <h2>Our Leadership Team</h2>
+        <p>Passionate healthcare innovators dedicated to making a difference</p>
+      </div>
+
+      <div class="team-grid-modern">
+        <div class="team-card-modern">
+          <div class="team-image-wrapper">
+            <div class="team-avatar-modern">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+            <div class="team-overlay">
+              <div class="team-social">
+                <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="#"><i class="fa-brands fa-twitter"></i></a>
+              </div>
+            </div>
+          </div>
+          <div class="team-info">
+            <h4>Dr. Sarah Johnson</h4>
+            <p class="team-role">Chief Medical Officer</p>
+            <p class="team-bio">15+ years in healthcare innovation, specializing in digital health transformation</p>
+          </div>
+        </div>
+
+        <div class="team-card-modern">
+          <div class="team-image-wrapper">
+            <div class="team-avatar-modern">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div class="team-overlay">
+              <div class="team-social">
+                <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="#"><i class="fa-brands fa-twitter"></i></a>
+              </div>
+            </div>
+          </div>
+          <div class="team-info">
+            <h4>Michael Chen</h4>
+            <p class="team-role">Chief Technology Officer</p>
+            <p class="team-bio">Expert in healthcare technology with a passion for building scalable solutions</p>
+          </div>
+        </div>
+
+        <div class="team-card-modern">
+          <div class="team-image-wrapper">
+            <div class="team-avatar-modern">
+              <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div class="team-overlay">
+              <div class="team-social">
+                <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="#"><i class="fa-brands fa-twitter"></i></a>
+              </div>
+            </div>
+          </div>
+          <div class="team-info">
+            <h4>Emily Rodriguez</h4>
+            <p class="team-role">Operations Director</p>
+            <p class="team-bio">Streamlining healthcare workflows to improve patient outcomes</p>
+          </div>
+        </div>
+
+        <div class="team-card-modern">
+          <div class="team-image-wrapper">
+            <div class="team-avatar-modern">
+              <i class="fa-solid fa-palette"></i>
+            </div>
+            <div class="team-overlay">
+              <div class="team-social">
+                <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="#"><i class="fa-brands fa-twitter"></i></a>
+              </div>
+            </div>
+          </div>
+          <div class="team-info">
+            <h4>James Wilson</h4>
+            <p class="team-role">Head of Design</p>
+            <p class="team-bio">Creating intuitive, beautiful experiences that patients love</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="about-cta-modern">
+    <div class="cta-content-modern">
+      <h2>Ready to Experience Better Healthcare?</h2>
+      <p>Join thousands of patients who trust CureConnect for their healthcare needs</p>
+      <div class="cta-buttons-modern">
+        {% if user %}
+        <a href="{{ url_for('booking') }}" class="btn-cta-primary">
+          <i class="fa-regular fa-calendar-check"></i> Book Appointment
+        </a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn-cta-primary">
+          <i class="fa-solid fa-user-plus"></i> Get Started
+        </a>
+        {% endif %}
+        <a href="{{ url_for('contact') }}" class="btn-cta-secondary">
+          <i class="fa-solid fa-envelope"></i> Contact Us
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-col">
+        <h4>CureConnect</h4>
+        <p>Transforming healthcare delivery through innovative technology and compassionate care. Your health, our
+          priority.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="{{ url_for('home') }}">Home</a></li>
+          <li><a href="#">Find Doctors</a></li>
+          <li><a href="{{ url_for('about') }}">About Us</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Our Services</h4>
+        <ul>
+          <li><a href="{{ url_for('booking') }}">Book Appointment</a></li>
+          <li><a href="#">Digital Records</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Stay Updated with Health Tips</h4>
+        <p>Subscribe to our newsletter for the latest healthcare insights and updates.</p>
+        <div class="newsletter">
+          <input type="email" placeholder="Enter your email">
+          <button>Subscribe</button>
+        </div>
+        <div class="contact-info">
+          <p><i class="fa-solid fa-location-dot"></i> 123 Healthcare Avenue, Medical District, NY 10001</p>
+          <p><i class="fa-solid fa-phone"></i> 1-800-CureConnect</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 CureConnect. All Rights Reserved.</p>
+    </div>
+  </footer>
+</body>
+
+</html>

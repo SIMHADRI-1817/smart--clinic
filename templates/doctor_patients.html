@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Records | Doctor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #0ea5e9;
+        }
+
+        .patient-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .patient-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .patient-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .patient-avatar-large {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 24px;
+        }
+
+        .patient-info {
+            flex: 1;
+        }
+
+        .patient-name-large {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .patient-email {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .patient-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label-small {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+
+        .stat-value-small {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0ea5e9;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body class="doctor-layout">
+    <aside class="patient-sidebar" style="background: linear-gradient(180deg, #0ea5e9 0%, #0ea5e9 100%);">
+        <div class="sidebar-brand"><i class="fa-solid fa-user-doctor"></i><span>Doctor Panel</span></div>
+        <div class="user-profile-patient">
+            <div class="user-avatar-patient">{{ user['full_name'][0] if user else 'D' }}</div>
+            <div class="user-info-patient">
+                <div class="user-name-patient">{{ user['full_name'] if user else 'Dr. Smith' }}</div>
+                <div class="user-role-patient">Doctor</div>
+            </div>
+        </div>
+        <nav class="sidebar-menu-patient">
+            <a href="{{ url_for('doctor_dashboard') }}" class="menu-item-patient"><i
+                    class="fa-regular fa-calendar-check"></i><span>My Schedule</span></a>
+            <a href="{{ url_for('doctor_patients') }}" class="menu-item-patient active"><i
+                    class="fa-solid fa-users"></i><span>Patient Records</span></a>
+            <a href="{{ url_for('doctor_prescriptions') }}" class="menu-item-patient"><i
+                    class="fa-solid fa-prescription-bottle-medical"></i><span>Prescriptions</span></a>
+        </nav>
+        <div class="sidebar-logout-patient"><a href="{{ url_for('logout') }}" class="logout-btn-patient"><i
+                    class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></div>
+    </aside>
+
+    <main class="patient-content">
+        <div class="patient-header">
+            <h1>Patient Records</h1>
+        </div>
+
+        <div class="patient-stats-grid">
+            <div class="patient-stat-card"
+                style="background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); color: white;">
+                <div class="stat-label-patient" style="color: rgba(255,255,255,0.9);">Total Patients</div>
+                <div class="stat-number-patient" style="color: white;">{{ patients|length }}</div>
+            </div>
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Medical Records</div>
+                <div class="stat-number-patient">{{ total_records }}</div>
+            </div>
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Prescriptions Written</div>
+                <div class="stat-number-patient">{{ total_prescriptions }}</div>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Search patients by name or email..."
+                onkeyup="filterPatients()">
+        </div>
+
+        <div class="patient-section">
+            {% if patients %}
+            <div id="patientsList">
+                {% for patient in patients %}
+                <div class="patient-card" data-name="{{ patient['full_name']|lower }}"
+                    data-email="{{ patient['email']|lower }}"
+                    onclick="window.location.href='{{ url_for('doctor_patient_details', patient_id=patient['id']) }}'">
+                    <div class="patient-header">
+                        <div class="patient-avatar-large">{{ patient['full_name'][0] }}</div>
+                        <div class="patient-info">
+                            <div class="patient-name-large">{{ patient['full_name'] }}</div>
+                            <div class="patient-email">{{ patient['email'] }}</div>
+                        </div>
+                        {% if patient['last_visit'] %}
+                        <div style="text-align: right; color: #7f8c8d; font-size: 13px;">
+                            <i class="fa-regular fa-calendar"></i> Last visit: {{ patient['last_visit'] }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="patient-stats">
+                        <div class="stat-item">
+                            <div class="stat-label-small">Appointments</div>
+                            <div class="stat-value-small">{{ patient['total_appointments'] }}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label-small">Medical Records</div>
+                            <div class="stat-value-small">{{ patient['medical_records'] }}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label-small">Active Rx</div>
+                            <div class="stat-value-small">{{ patient['active_prescriptions'] }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state-patient"><i class="fa-solid fa-users"></i>
+                <p>No patients found</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        function filterPatients() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const cards = document.querySelectorAll('.patient-card');
+
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                const email = card.getAttribute('data-email');
+                if (name.includes(filter) || email.includes(filter)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

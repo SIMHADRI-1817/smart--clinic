@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Details | Doctor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .details-container {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+
+        .patient-header-details {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .patient-avatar-xl {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 32px;
+        }
+
+        .details-section {
+            margin-bottom: 32px;
+        }
+
+        .details-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .record-card {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .record-content {
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+
+        .action-btn {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #0284c7;
+        }
+    </style>
+</head>
+
+<body class="doctor-layout">
+    <aside class="patient-sidebar" style="background: linear-gradient(180deg, #0ea5e9 0%, #0ea5e9 100%);">
+        <div class="sidebar-brand"><i class="fa-solid fa-user-doctor"></i><span>Doctor Panel</span></div>
+        <div class="user-profile-patient">
+            <div class="user-avatar-patient">{{ user['full_name'][0] if user else 'D' }}</div>
+            <div class="user-info-patient">
+                <div class="user-name-patient">{{ user['full_name'] if user else 'Dr. Smith' }}</div>
+                <div class="user-role-patient">Doctor</div>
+            </div>
+        </div>
+        <nav class="sidebar-menu-patient">
+            <a href="{{ url_for('doctor_dashboard') }}" class="menu-item-patient"><i
+                    class="fa-regular fa-calendar-check"></i><span>My Schedule</span></a>
+            <a href="{{ url_for('doctor_patients') }}" class="menu-item-patient active"><i
+                    class="fa-solid fa-users"></i><span>Patient Records</span></a>
+            <a href="{{ url_for('doctor_prescriptions') }}" class="menu-item-patient"><i
+                    class="fa-solid fa-prescription-bottle-medical"></i><span>Prescriptions</span></a>
+        </nav>
+        <div class="sidebar-logout-patient"><a href="{{ url_for('logout') }}" class="logout-btn-patient"><i
+                    class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></div>
+    </aside>
+
+    <main class="patient-content">
+        <div class="patient-header">
+            <h1>Patient Details</h1>
+            <a href="{{ url_for('doctor_patients') }}" style="color: #7f8c8d; text-decoration: none;"><i
+                    class="fa-solid fa-arrow-left"></i> Back to List</a>
+        </div>
+
+        <div class="details-container">
+            <div class="patient-header-details">
+                <div class="patient-avatar-xl">{{ patient['full_name'][0] }}</div>
+                <div style="flex: 1;">
+                    <h2 style="margin: 0 0 8px 0; color: #2c3e50;">{{ patient['full_name'] }}</h2>
+                    <div style="color: #7f8c8d; margin-bottom: 4px;"><i class="fa-regular fa-envelope"></i> {{
+                        patient['email'] }}</div>
+                    <div style="color: #7f8c8d;"><i class="fa-solid fa-phone"></i> {{ patient['phone'] or 'No phone
+                        number' }}</div>
+                </div>
+                <div>
+                    <a href="{{ url_for('doctor_add_prescription', patient_id=patient['id']) }}" class="action-btn">
+                        <i class="fa-solid fa-pen-to-square"></i> Write Prescription
+                    </a>
+                </div>
+            </div>
+
+            <div class="details-section">
+                <div class="details-title"><i class="fa-solid fa-file-medical"></i> Medical History</div>
+                {% if medical_records %}
+                {% for record in medical_records %}
+                <div class="record-card">
+                    <div class="record-header">
+                        <span><i class="fa-solid fa-user-doctor"></i> {{ record['doctor_name'] }}</span>
+                        <span>{{ record['created_at'] }}</span>
+                    </div>
+                    <div class="record-content">
+                        <strong>Diagnosis:</strong> {{ record['diagnosis'] }}<br>
+                        <strong>Treatment:</strong> {{ record['treatment'] }}<br>
+                        {% if record['notes'] %}
+                        <strong>Notes:</strong> {{ record['notes'] }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p style="color: #7f8c8d; font-style: italic;">No medical records found.</p>
+                {% endif %}
+            </div>
+
+            <div class="details-section">
+                <div class="details-title"><i class="fa-solid fa-pills"></i> Active Prescriptions</div>
+                {% if prescriptions %}
+                {% for rx in prescriptions %}
+                <div class="record-card">
+                    <div class="record-header">
+                        <span><i class="fa-solid fa-user-doctor"></i> {{ rx['doctor_name'] }}</span>
+                        <span>{{ rx['created_at'] }}</span>
+                    </div>
+                    <div class="record-content">
+                        <strong>Medications:</strong> {{ rx['medications'] }}<br>
+                        <strong>Instructions:</strong> {{ rx['instructions'] }}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p style="color: #7f8c8d; font-style: italic;">No active prescriptions.</p>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

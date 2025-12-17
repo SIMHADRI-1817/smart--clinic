@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Analytics | CureConnect Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar-blue">
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Admin Panel</span>
+        </div>
+
+        <nav class="sidebar-menu">
+            <a href="{{ url_for('admin') }}" class="menu-item">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('analytics1') }}" class="menu-item">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>User Activity</span>
+            </a>
+            <a href="{{ url_for('analytics2') }}" class="menu-item active">
+                <i class="fa-solid fa-chart-bar"></i>
+                <span>Doctor Ratings</span>
+            </a>
+            <a href="{{ url_for('manage_clinics') }}" class="menu-item">
+                <i class="fa-solid fa-hospital"></i>
+                <span>Manage Clinics</span>
+            </a>
+            <a href="{{ url_for('manage_users') }}" class="menu-item">
+                <i class="fa-solid fa-users"></i>
+                <span>Manage Users</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-logout">
+            <a href="{{ url_for('logout') }}" class="menu-item">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+        <!-- Top Bar -->
+        <div class="admin-topbar">
+            <h1>Doctor Performance & Ratings</h1>
+            <div class="topbar-actions">
+                <a href="{{ url_for('export_doctor_ratings') }}" class="btn-primary" style="text-decoration: none;">
+                    <i class="fa-solid fa-download"></i> Export Report
+                </a>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Doctor Ratings Chart -->
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <h3>Doctor Ratings by Clinic</h3>
+                    <div class="chart-legend">
+                        <span class="legend-item"><span class="dot blue"></span> Rating (out of 5)</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="doctorRatingsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Appointments per Doctor -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>Patient Volume per Doctor</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="doctorVolumeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Clinic Performance -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>Clinic Performance</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="clinicPerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Performers Table -->
+        <div class="dashboard-card mt-4">
+            <h3>Top Performing Doctors</h3>
+            <div class="table-responsive">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Doctor Name</th>
+                            <th>Rating</th>
+                            <th>Patients</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in range(doctors|length) %}
+                        <tr>
+                            <td>
+                                <div class="user-info-cell">
+                                    <div class="user-avatar-small" style="background: #3b82f6;">
+                                        <i class="fa-solid fa-user-doctor"></i>
+                                    </div>
+                                    <span class="user-name-bold">{{ doctors[i] }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="rating-stars">
+                                    <i class="fa-solid fa-star text-warning"></i>
+                                    <strong>{{ ratings[i] }}</strong>
+                                </div>
+                            </td>
+                            <td>{{ appt_counts[i] }} visits</td>
+                            <td>
+                                <span class="status-badge status-active">Top Rated</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Data from Flask
+        const doctors = {{ doctors| tojson }};
+        const ratings = {{ ratings| tojson }};
+        const apptCounts = {{ appt_counts| tojson }};
+        const clinicNames = {{ clinic_names| tojson }};
+        const clinicRatings = {{ clinic_ratings| tojson }};
+
+        // 1. Doctor Ratings Bar Chart
+        const ctxRatings = document.getElementById('doctorRatingsChart').getContext('2d');
+        new Chart(ctxRatings, {
+            type: 'bar',
+            data: {
+                labels: doctors,
+                datasets: [{
+                    label: 'Rating',
+                    data: ratings,
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 6,
+                    barThickness: 30
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5,
+                        grid: {
+                            color: '#f3f4f6'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Doctor Volume Chart
+        const ctxVolume = document.getElementById('doctorVolumeChart').getContext('2d');
+        new Chart(ctxVolume, {
+            type: 'doughnut',
+            data: {
+                labels: doctors,
+                datasets: [{
+                    data: apptCounts,
+                    backgroundColor: [
+                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Clinic Performance Radar Chart
+        const ctxClinic = document.getElementById('clinicPerformanceChart').getContext('2d');
+        new Chart(ctxClinic, {
+            type: 'radar',
+            data: {
+                labels: clinicNames,
+                datasets: [{
+                    label: 'Performance Score',
+                    data: clinicRatings,
+                    fill: true,
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    borderColor: '#10b981',
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#10b981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: false
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 5
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

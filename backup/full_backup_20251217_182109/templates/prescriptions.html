@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prescriptions | CureConnect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .filter-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, #0071e3 0%, #00c6fb 100%);
+            color: white;
+            border-color: #0071e3;
+        }
+
+        .prescription-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 16px;
+        }
+
+        .prescription-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .medication-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .prescription-meta {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .status-badge-rx {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .dosage-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .dosage-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .dosage-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .dosage-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .instructions-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 12px;
+        }
+
+        .progress-bar-container {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0071e3 0%, #00c6fb 100%);
+            transition: width 0.3s;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #0071e3;
+        }
+    </style>
+</head>
+
+<body class="patient-layout">
+    <!-- Sidebar -->
+    <aside class="patient-sidebar">
+        <div class="sidebar-brand"><i class="fa-solid fa-activity"></i><span>CureConnect</span></div>
+        <div class="user-profile-patient">
+            <div class="user-avatar-patient">{{ user['full_name'][0] if user else 'J' }}</div>
+            <div class="user-info-patient">
+                <div class="user-name-patient">{{ user['full_name'] if user else 'John Doe' }}</div>
+                <div class="user-role-patient">Patient</div>
+            </div>
+        </div>
+        <nav class="sidebar-menu-patient">
+            <a href="{{ url_for('patient_dashboard') }}" class="menu-item-patient"><i
+                    class="fa-regular fa-calendar-check"></i><span>My Appointments</span></a>
+            <a href="{{ url_for('booking') }}" class="menu-item-patient"><i
+                    class="fa-regular fa-calendar-plus"></i><span>Book Appointment</span></a>
+            <a href="{{ url_for('medical_history') }}" class="menu-item-patient"><i
+                    class="fa-solid fa-notes-medical"></i><span>Medical History</span></a>
+            <a href="{{ url_for('prescriptions') }}" class="menu-item-patient active"><i
+                    class="fa-solid fa-prescription-bottle-medical"></i><span>Prescriptions</span></a>
+        </nav>
+        <div class="sidebar-logout-patient"><a href="{{ url_for('logout') }}" class="logout-btn-patient"><i
+                    class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="patient-content">
+        <div class="patient-header">
+            <h1>My Prescriptions</h1>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="patient-stats-grid">
+            <div class="patient-stat-card"
+                style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white;">
+                <div class="stat-label-patient" style="color: rgba(255,255,255,0.9);">Active Prescriptions</div>
+                <div class="stat-number-patient" style="color: white;">{{ active_count }}</div>
+            </div>
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Completed</div>
+                <div class="stat-number-patient">{{ completed_count }}</div>
+            </div>
+            <div class="patient-stat-card">
+                <div class="stat-label-patient">Total Medications</div>
+                <div class="stat-number-patient">{{ prescriptions|length }}</div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <button class="filter-tab {% if filter_status == 'all' %}active{% endif %}"
+                onclick="window.location.href='{{ url_for('prescriptions', filter='all') }}'">All</button>
+            <button class="filter-tab {% if filter_status == 'active' %}active{% endif %}"
+                onclick="window.location.href='{{ url_for('prescriptions', filter='active') }}'">Active</button>
+            <button class="filter-tab {% if filter_status == 'completed' %}active{% endif %}"
+                onclick="window.location.href='{{ url_for('prescriptions', filter='completed') }}'">Completed</button>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Search medications..." onkeyup="filterPrescriptions()">
+        </div>
+
+        <!-- Prescriptions List -->
+        <div class="patient-section">
+            {% if prescriptions %}
+            <div id="prescriptionsList">
+                {% for rx in prescriptions %}
+                <div class="prescription-card" data-medication="{{ rx['medication_name']|lower }}">
+                    <div class="prescription-header">
+                        <div>
+                            <div class="medication-name"><i class="fa-solid fa-pills"></i> {{ rx['medication_name'] }}
+                            </div>
+                            <div class="prescription-meta">
+                                Prescribed by <strong>Dr. {{ rx['doctor_name'] }}</strong> on {{ rx['prescribed_date']
+                                }}
+                            </div>
+                        </div>
+                        <span class="status-badge-rx status-{{ rx['status'] }}">{{ rx['status']|capitalize }}</span>
+                    </div>
+
+                    <div class="dosage-info">
+                        <div class="dosage-item">
+                            <div class="dosage-label">Dosage</div>
+                            <div class="dosage-value">{{ rx['dosage'] }}</div>
+                        </div>
+                        <div class="dosage-item">
+                            <div class="dosage-label">Frequency</div>
+                            <div class="dosage-value">{{ rx['frequency'] }}</div>
+                        </div>
+                        <div class="dosage-item">
+                            <div class="dosage-label">Duration</div>
+                            <div class="dosage-value">{{ rx['duration'] }}</div>
+                        </div>
+                        {% if rx['end_date'] %}
+                        <div class="dosage-item">
+                            <div class="dosage-label">End Date</div>
+                            <div class="dosage-value">{{ rx['end_date'] }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if rx['instructions'] %}
+                    <div class="instructions-box">
+                        <strong><i class="fa-solid fa-info-circle"></i> Instructions:</strong> {{ rx['instructions'] }}
+                    </div>
+                    {% endif %}
+
+                    {% if rx['status'] == 'active' and rx['end_date'] %}
+                    <div style="margin-top: 12px;">
+                        <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 4px;">Progress</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: {{ rx['progress'] }}%;"></div>
+                        </div>
+                        <div style="font-size: 11px; color: #7f8c8d; margin-top: 4px;">{{ rx['days_left'] }} days
+                            remaining</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state-patient"><i class="fa-solid fa-prescription-bottle-medical"></i>
+                <p>No prescriptions found</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        function filterPrescriptions() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const cards = document.querySelectorAll('.prescription-card');
+
+            cards.forEach(card => {
+                const medication = card.getAttribute('data-medication');
+                if (medication.includes(filter)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

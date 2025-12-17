@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Appointment | CureConnect</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="booking-page">
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="logo">
+      <i class="fa-solid fa-staff-snake"></i> CureConnect <span class="logo-sub">Healthcare Excellence</span>
+    </div>
+    <nav>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="#">Doctors</a>
+    </nav>
+  </header>
+
+  <!-- Booking Form Container -->
+  <div class="booking-container">
+    <div class="booking-card">
+      <h2 class="booking-title">Book an Appointment</h2>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-messages">
+        {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('booking') }}" class="booking-form" id="bookingForm">
+        <!-- Select Clinic (FIRST) -->
+        <div class="form-field">
+          <label for="clinic">Select Clinic</label>
+          <select id="clinic" name="clinic_id" required>
+            <option value="">Choose a clinic</option>
+          </select>
+          <i class="fa-solid fa-chevron-down select-icon"></i>
+        </div>
+
+        <!-- Select Doctor (SECOND - dynamically populated) -->
+        <div class="form-field">
+          <label for="doctor">Select Doctor</label>
+          <select id="doctor" name="doctor_id" required disabled>
+            <option value="">First select a clinic</option>
+          </select>
+          <i class="fa-solid fa-chevron-down select-icon"></i>
+        </div>
+
+        <!-- Appointment Date (THIRD) -->
+        <div class="form-field">
+          <label for="date">Appointment Date</label>
+          <input type="date" id="date" name="date" required disabled>
+          <i class="fa-regular fa-calendar date-icon"></i>
+        </div>
+
+        <!-- Appointment Time (FOURTH - dynamically populated) -->
+        <div class="form-field">
+          <label for="time">Appointment Time</label>
+          <select id="time" name="time" required disabled>
+            <option value="">Select date first</option>
+          </select>
+          <i class="fa-regular fa-clock select-icon"></i>
+        </div>
+
+        <!-- Reason for Visit (FIFTH) -->
+        <div class="form-field">
+          <label for="reason">Reason for Visit</label>
+          <textarea id="reason" name="reason" rows="3" placeholder="Brief description of your concern"
+            required></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-book" id="submitBtn">Book Appointment</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-col">
+        <h4>CureConnect</h4>
+        <p>Transforming healthcare delivery through innovative technology and compassionate care.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="{{ url_for('home') }}">Home</a></li>
+          <li><a href="#">Find Doctors</a></li>
+          <li><a href="#">About Us</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <p><i class="fa-solid fa-location-dot"></i> 123 Healthcare Avenue, NY 10001</p>
+        <p><i class="fa-solid fa-phone"></i> 1-800-CURECONNECT</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 CureConnect. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Load clinics on page load
+    document.addEventListener('DOMContentLoaded', function () {
+      loadClinics();
+
+      // Set minimum date to today
+      const dateInput = document.getElementById('date');
+      const today = new Date().toISOString().split('T')[0];
+      dateInput.setAttribute('min', today);
+    });
+
+    // Load all clinics
+    function loadClinics() {
+      fetch('/api/get_clinics')
+        .then(response => response.json())
+        .then(data => {
+          const clinicSelect = document.getElementById('clinic');
+          clinicSelect.innerHTML = '<option value="">Choose a clinic</option>';
+          data.forEach(clinic => {
+            const option = document.createElement('option');
+            option.value = clinic.id;
+            option.textContent = clinic.name;
+            clinicSelect.appendChild(option);
+          });
+        })
+        .catch(error => console.error('Error loading clinics:', error));
+    }
+
+    // When clinic is selected, load doctors for that clinic
+    document.getElementById('clinic').addEventListener('change', function () {
+      const clinicId = this.value;
+      const doctorSelect = document.getElementById('doctor');
+      const dateInput = document.getElementById('date');
+      const timeSelect = document.getElementById('time');
+
+      if (clinicId) {
+        fetch(`/api/get_doctors_by_clinic?clinic_id=${clinicId}`)
+          .then(response => response.json())
+          .then(data => {
+            doctorSelect.innerHTML = '<option value="">Choose a doctor</option>';
+            data.forEach(doctor => {
+              const option = document.createElement('option');
+              option.value = doctor.id;
+              option.textContent = `${doctor.name} - ${doctor.specialization}`;
+              doctorSelect.appendChild(option);
+            });
+            doctorSelect.disabled = false;
+            dateInput.disabled = false;
+          })
+          .catch(error => console.error('Error loading doctors:', error));
+      } else {
+        doctorSelect.innerHTML = '<option value="">First select a clinic</option>';
+        doctorSelect.disabled = true;
+        dateInput.disabled = true;
+        timeSelect.disabled = true;
+      }
+
+      // Reset subsequent fields
+      dateInput.value = '';
+      timeSelect.innerHTML = '<option value="">Select date first</option>';
+      timeSelect.disabled = true;
+    });
+
+    // When doctor is selected, enable date
+    document.getElementById('doctor').addEventListener('change', function () {
+      if (this.value) {
+        loadAvailableSlots();
+      }
+    });
+
+    // When date is selected, load available time slots
+    document.getElementById('date').addEventListener('change', function () {
+      loadAvailableSlots();
+    });
+
+    function loadAvailableSlots() {
+      const doctorId = document.getElementById('doctor').value;
+      const clinicId = document.getElementById('clinic').value;
+      const date = document.getElementById('date').value;
+      const timeSelect = document.getElementById('time');
+
+      if (doctorId && clinicId && date) {
+        fetch(`/api/get_available_slots?doctor_id=${doctorId}&clinic_id=${clinicId}&date=${date}`)
+          .then(response => response.json())
+          .then(data => {
+            timeSelect.innerHTML = '';
+            if (data.available_times && data.available_times.length > 0) {
+              timeSelect.innerHTML = '<option value="">Choose a time</option>';
+              data.available_times.forEach(time => {
+                const option = document.createElement('option');
+                option.value = time;
+                option.textContent = time;
+                timeSelect.appendChild(option);
+              });
+              timeSelect.disabled = false;
+            } else {
+              timeSelect.innerHTML = '<option value="">No slots available</option>';
+              timeSelect.disabled = true;
+            }
+          })
+          .catch(error => {
+            console.error('Error loading time slots:', error);
+            timeSelect.innerHTML = '<option value="">Error loading slots</option>';
+          });
+      }
+    }
+  </script>
+</body>
+
+</html>

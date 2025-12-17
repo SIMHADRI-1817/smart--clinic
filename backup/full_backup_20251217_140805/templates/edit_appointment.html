@@ -1,0 +1,333 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Appointment | CureConnect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="booking-page">
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-staff-snake"></i> CureConnect <span class="logo-sub">Healthcare Excellence</span>
+        </div>
+        <nav>
+            <a href="{{ url_for('patient_dashboard') }}">Back to Dashboard</a>
+        </nav>
+    </header>
+
+    <!-- Edit Form Container -->
+    <div class="booking-container">
+        <div class="booking-card">
+            <h2 class="booking-title">Edit Appointment #{{ appt['id'] }}</h2>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for category, msg in messages %}
+                <div class="flash {{ category }}">{{ msg }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="booking-form" id="editForm">
+                <!-- Select Clinic (FIRST) -->
+                <div class="form-field">
+                    <label for="clinic">Select Clinic</label>
+                    <select id="clinic" name="clinic_id" required>
+                        <option value="">Choose a clinic</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-icon"></i>
+                </div>
+
+                <!-- Select Doctor (SECOND - dynamically populated) -->
+                <div class="form-field">
+                    <label for="doctor">Select Doctor</label>
+                    <select id="doctor" name="doctor_id" required disabled>
+                        <option value="">First select a clinic</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-icon"></i>
+                </div>
+
+                <!-- Appointment Date (THIRD) -->
+                <div class="form-field">
+                    <label for="date">Appointment Date</label>
+                    <input type="date" id="date" name="date" value="{{ appt['date'] }}" required disabled>
+                    <i class="fa-regular fa-calendar date-icon"></i>
+                </div>
+
+                <!-- Appointment Time (FOURTH - dynamically populated) -->
+                <div class="form-field">
+                    <label for="time">Appointment Time</label>
+                    <select id="time" name="time" required disabled>
+                        <option value="">Select date first</option>
+                    </select>
+                    <i class="fa-regular fa-clock select-icon"></i>
+                </div>
+
+                <!-- Reason for Visit (FIFTH) -->
+                <div class="form-field">
+                    <label for="reason">Reason for Visit</label>
+                    <textarea id="reason" name="reason" rows="3"
+                        placeholder="Brief description of your concern">{{ appt['reason'] or '' }}</textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-book" id="submitBtn">Update Appointment</button>
+                <a href="{{ url_for('patient_dashboard') }}" class="btn-secondary"
+                    style="display: block; text-align: center; margin-top: 10px;">Cancel</a>
+                <button type="button" class="btn-danger" id="cancelApptBtn"
+                    style="display: block; width: 100%; margin-top: 10px; background: #dc3545; color: white; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                    Cancel Appointment
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>CureConnect</h4>
+                <p>Transforming healthcare delivery through innovative technology and compassionate care.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="{{ url_for('home') }}">Home</a></li>
+                    <li><a href="#">Find Doctors</a></li>
+                    <li><a href="#">About Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Contact</h4>
+                <p><i class="fa-solid fa-location-dot"></i> 123 Healthcare Avenue, NY 10001</p>
+                <p><i class="fa-solid fa-phone"></i> 1-800-CURECONNECT</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p> 2025 CureConnect. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Hidden inputs for data injection -->
+    <input type="hidden" id="appt-clinic-id" value="{{ appt['clinic_id'] or '' }}">
+    <input type="hidden" id="appt-doctor-id" value="{{ appt['doctor_id'] or '' }}">
+    <input type="hidden" id="appt-date" value="{{ appt['date'] or '' }}">
+    <input type="hidden" id="appt-time" value="{{ appt['time'] or '' }}">
+    <input type="hidden" id="appt-id" value="{{ appt['id'] }}">
+
+    <script>
+        console.log("Script started - v3 (Hidden Inputs)");
+
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log("DOMContentLoaded fired");
+
+            // Read data from hidden inputs
+            const currentAppt = {
+                clinicId: document.getElementById('appt-clinic-id').value || null,
+                doctorId: document.getElementById('appt-doctor-id').value || null,
+                date: document.getElementById('appt-date').value || '',
+                time: document.getElementById('appt-time').value || ''
+            };
+
+            console.log("currentAppt loaded from inputs:", currentAppt);
+
+            // Set minimum date to today
+            const dateInput = document.getElementById('date');
+            if (dateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.setAttribute('min', today);
+            }
+
+            // Load clinics
+            loadClinics(currentAppt);
+        });
+
+        // Load all clinics
+        function loadClinics(currentAppt) {
+            console.log("loadClinics called");
+            fetch('/api/get_clinics')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Clinics data:", data);
+                    const clinicSelect = document.getElementById('clinic');
+                    if (!clinicSelect) return;
+
+                    clinicSelect.innerHTML = '<option value="">Choose a clinic</option>';
+                    data.forEach(clinic => {
+                        const option = document.createElement('option');
+                        option.value = clinic.id;
+                        option.textContent = clinic.name;
+                        // Loose equality check for ID matching (string vs number)
+                        if (currentAppt.clinicId && clinic.id == currentAppt.clinicId) {
+                            option.selected = true;
+                        }
+                        clinicSelect.appendChild(option);
+                    });
+
+                    // If there's a current clinic, load its doctors
+                    if (currentAppt.clinicId) {
+                        loadDoctorsForClinic(currentAppt.clinicId, currentAppt);
+                    }
+                })
+                .catch(error => console.error('Error loading clinics:', error));
+        }
+
+        // Load doctors for a specific clinic
+        function loadDoctorsForClinic(clinicId, currentAppt) {
+            const doctorSelect = document.getElementById('doctor');
+            const dateInput = document.getElementById('date');
+
+            if (clinicId) {
+                fetch(`/api/get_doctors_by_clinic?clinic_id=${clinicId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        doctorSelect.innerHTML = '<option value="">Choose a doctor</option>';
+                        data.forEach(doctor => {
+                            const option = document.createElement('option');
+                            option.value = doctor.id;
+                            option.textContent = `${doctor.name} - ${doctor.specialization}`;
+                            if (currentAppt && currentAppt.doctorId && doctor.id == currentAppt.doctorId) {
+                                option.selected = true;
+                            }
+                            doctorSelect.appendChild(option);
+                        });
+                        doctorSelect.disabled = false;
+                        dateInput.disabled = false;
+
+                        // If there's a current doctor and date, load time slots
+                        if (currentAppt && currentAppt.doctorId && currentAppt.date) {
+                            loadAvailableSlots(currentAppt);
+                        }
+                    })
+                    .catch(error => console.error('Error loading doctors:', error));
+            } else {
+                doctorSelect.innerHTML = '<option value="">First select a clinic</option>';
+                doctorSelect.disabled = true;
+                dateInput.disabled = true;
+            }
+        }
+
+        // Event Listeners
+        const clinicSelect = document.getElementById('clinic');
+        if (clinicSelect) {
+            clinicSelect.addEventListener('change', function () {
+                const clinicId = this.value;
+                const timeSelect = document.getElementById('time');
+
+                // Pass null for currentAppt when manually changing clinic
+                loadDoctorsForClinic(clinicId, null);
+
+                // Reset time
+                if (timeSelect) {
+                    timeSelect.innerHTML = '<option value="">Select date first</option>';
+                    timeSelect.disabled = true;
+                }
+            });
+        }
+
+        const doctorSelect = document.getElementById('doctor');
+        if (doctorSelect) {
+            doctorSelect.addEventListener('change', function () {
+                if (this.value) {
+                    loadAvailableSlots(null);
+                }
+            });
+        }
+
+        const dateInput = document.getElementById('date');
+        if (dateInput) {
+            dateInput.addEventListener('change', function () {
+                loadAvailableSlots(null);
+            });
+        }
+
+        function loadAvailableSlots(currentAppt) {
+            const doctorId = document.getElementById('doctor').value;
+            const clinicId = document.getElementById('clinic').value;
+            const date = document.getElementById('date').value;
+            const timeSelect = document.getElementById('time');
+
+            if (doctorId && clinicId && date) {
+                fetch(`/api/get_available_slots?doctor_id=${doctorId}&clinic_id=${clinicId}&date=${date}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        timeSelect.innerHTML = '';
+
+                        // Always include the current time as an option if it matches the selected date
+                        // Only if we are loading the initial state (currentAppt is passed)
+                        if (currentAppt && currentAppt.time) {
+                            const currentOption = document.createElement('option');
+                            currentOption.value = currentAppt.time;
+                            currentOption.textContent = `${currentAppt.time} (Current)`;
+                            currentOption.selected = true;
+                            timeSelect.appendChild(currentOption);
+                        }
+
+                        if (data.available_times && data.available_times.length > 0) {
+                            data.available_times.forEach(time => {
+                                // Don't duplicate the current time
+                                if (!currentAppt || time !== currentAppt.time) {
+                                    const option = document.createElement('option');
+                                    option.value = time;
+                                    option.textContent = time;
+                                    timeSelect.appendChild(option);
+                                }
+                            });
+                            timeSelect.disabled = false;
+                        } else if (!currentAppt || !currentAppt.time) {
+                            timeSelect.innerHTML = '<option value="">No slots available</option>';
+                            timeSelect.disabled = true;
+                        } else {
+                            timeSelect.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading time slots:', error);
+                        timeSelect.innerHTML = '<option value="">Error loading slots</option>';
+                    });
+            }
+        }
+
+        // Cancel Appointment functionality
+        const cancelBtn = document.getElementById('cancelApptBtn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function () {
+                if (confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
+                    const apptId = document.getElementById('appt-id').value;
+                    fetch(`/cancel_appointment/${apptId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('Appointment cancelled successfully!');
+                                window.location.href = '{{ url_for("patient_dashboard") }}';
+                            } else {
+                                alert('Error: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while cancelling the appointment.');
+                        });
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
