@@ -16,8 +16,8 @@ import os
 # Email Configuration (Placeholders - User to update)
 MAIL_SERVER = 'smtp.gmail.com'
 MAIL_PORT = 587
-MAIL_USERNAME = 'cureconnect25@gmail.com'  
-MAIL_PASSWORD = 'hron jiup mlht uqwx'     
+MAIL_USERNAME = os.environ.get("MAIL_USERNAME")  
+MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")     
 
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -50,8 +50,8 @@ app.secret_key = "dev_secret_for_flash"  # use a strong key for production
 DB = 'clinic.db'
 
 # Google OAuth Configuration
-app.config['GOOGLE_CLIENT_ID'] = '162547054154-j26fr41mr6lkomqhhmna2k3hpdu3kok0.apps.googleusercontent.com'
-app.config['GOOGLE_CLIENT_SECRET'] = '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'
+app.config['GOOGLE_CLIENT_ID'] = os.environ.get("GOOGLE_CLIENT_ID")
+app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get("GOOGLE_CLIENT_SECRET")
 app.config['GOOGLE_DISCOVERY_URL'] = "https://accounts.google.com/.well-known/openid-configuration"
 
 oauth = OAuth(app)
