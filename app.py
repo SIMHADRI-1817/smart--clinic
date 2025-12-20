@@ -722,26 +722,36 @@ def get_available_slots():
     
     # Filter past times if date is today
     try:
-        print(f"DEBUG: Filtering slots. Date param: '{date}'")
-        requested_date = datetime.strptime(date, '%Y-%m-%d').date()
-        now = datetime.now()
-        print(f"DEBUG: Requested: {requested_date}, Server Now: {now.date()} {now.time()}")
+        # Debugging: Write to a file to verify what we receive
+        with open('debug_log.txt', 'a') as f:
+             f.write(f"\n[{datetime.now()}] Request Date: '{date}'")
+
+        requested_date = None
+        for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y', '%d/%m/%Y'):
+            try:
+                requested_date = datetime.strptime(date, fmt).date()
+                break
+            except ValueError:
+                continue
         
+        if not requested_date:
+            with open('debug_log.txt', 'a') as f:
+                f.write(" -> Failed to parse date!")
+            raise ValueError("Invalid date format")
+
+        now = datetime.now()
+        with open('debug_log.txt', 'a') as f:
+             f.write(f" -> Parsed: {requested_date}, ServerToday: {now.date()}")
+
         if requested_date == now.date():
             current_time = now.time()
-            print(f"DEBUG: Date matches! Filtering times before {current_time}")
-            original_count = len(available_times)
             available_times = [t for t in available_times if datetime.strptime(t, '%H:%M').time() > current_time]
-            print(f"DEBUG: Filtered {original_count} slots down to {len(available_times)}")
-        else:
-            print("DEBUG: Date does not match today.")
-            
-    except ValueError as e:
-        print(f"DEBUG: ValueError in slot filtering: {e}")
+    except Exception as e:
+        with open('debug_log.txt', 'a') as f:
+             f.write(f" -> ERROR: {e}")
         pass
     
     return jsonify({'available_times': available_times})
-
 
 # -------------------------
 # Doctor Availability API
