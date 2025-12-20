@@ -600,6 +600,18 @@ def booking():
             flash("All fields are required.", "error")
             conn.close()
             return redirect(url_for('booking'))
+
+        # Check if booking is in the past
+        try:
+             booking_dt = datetime.strptime(f"{date} {time}", '%Y-%m-%d %H:%M')
+             if booking_dt < datetime.now():
+                 flash("Cannot book appointments in the past. Please choose a future time.", "error")
+                 conn.close()
+                 return redirect(url_for('booking'))
+        except ValueError:
+             flash("Invalid date or time format.", "error")
+             conn.close()
+             return redirect(url_for('booking'))
  
         conn.execute(
             "INSERT INTO appointments (patient_name, doctor_name, doctor_id, clinic_name, clinic_id, date, time, reason, status) VALUES (?,?,?,?,?,?,?,?,?)",
@@ -707,6 +719,16 @@ def get_available_slots():
         all_possible_slots = standard_times
     
     available_times = [time for time in all_possible_slots if time not in occupied_times]
+    
+    # Filter past times if date is today
+    try:
+        requested_date = datetime.strptime(date, '%Y-%m-%d').date()
+        now = datetime.now()
+        if requested_date == now.date():
+            current_time = now.time()
+            available_times = [t for t in available_times if datetime.strptime(t, '%H:%M').time() > current_time]
+    except ValueError:
+        pass
     
     return jsonify({'available_times': available_times})
 
