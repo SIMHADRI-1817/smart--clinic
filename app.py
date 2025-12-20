@@ -111,14 +111,15 @@ def get_current_user():
 # -------------------------
 def update_appointment_statuses():
     """
-    Checks for appointments that are 3 hours past their scheduled time
-    and marks them as 'no_show' if they are still pending/confirmed/checked_in.
+    Checks for appointments that are 1 hour past their scheduled time
+    and marks them as 'no_show' if they are still pending or confirmed.
     """
     try:
         conn = get_db_connection()
         # Get appointments that might need updating
+        # Excluded 'checked_in' - if they are here, they aren't a no-show!
         appointments = conn.execute(
-            "SELECT id, date, time FROM appointments WHERE status IN ('pending', 'confirmed', 'checked_in')"
+            "SELECT id, date, time FROM appointments WHERE status IN ('pending', 'confirmed')"
         ).fetchall()
         
         current_time = datetime.now()
@@ -130,8 +131,8 @@ def update_appointment_statuses():
                 appt_dt_str = f"{appt['date']} {appt['time']}"
                 appt_dt = datetime.strptime(appt_dt_str, '%Y-%m-%d %H:%M')
                 
-                # Check if 3 hours have passed
-                if current_time > appt_dt + timedelta(hours=3):
+                # Check if 1 hour has passed
+                if current_time > appt_dt + timedelta(minutes=60):
                     conn.execute(
                         "UPDATE appointments SET status = 'no_show' WHERE id = ?",
                         (appt['id'],)
