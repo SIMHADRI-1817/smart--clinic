@@ -105,7 +105,6 @@ def get_current_user():
     user = conn.execute('SELECT * FROM users WHERE id=?', (uid,)).fetchone()
     conn.close()
     return user
- 
 # -------------------------
 # Auto-Update Status Helper
 # -------------------------
@@ -162,9 +161,61 @@ def update_appointment_statuses():
 @app.before_request
 def before_request():
     # Run this check on every request (or could limit to specific routes)
-    # For this scale, running it here is fine.
     update_appointment_statuses()
 
+@app.route('/debug/fix_statuses')
+def debug_fix_statuses():
+    log = []
+    try:
+        conn = get_db_connection()
+        appointments = conn.execute(
+            "SELECT id, date, time, status, patient_name FROM appointments WHERE status IN ('pending', 'confirmed')"
+        ).fetchall()
+        
+        current_time = datetime.now()
+        log.append(f"Current Time: {current_time}")
+        
+        updated_count = 0
+        
+        for appt in appointments:
+            try:
+                date_str = appt['date']
+                date_obj = None
+                for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y', '%d/%m/%Y'):
+                    try:
+                        date_obj = datetime.strptime(date_str, fmt).date()
+                        break
+                    except ValueError:
+                        continue
+                
+                if not date_obj:
+                    log.append(f"ID {appt['id']}: Unparseable date '{date_str}'")
+                    continue
+
+                time_str = appt['time']
+                appt_dt = datetime.combine(date_obj, datetime.strptime(time_str, '%H:%M').time())
+                
+                # Check if 1 hour has passed
+                threshold = appt_dt + timedelta(minutes=60)
+                
+                if current_time > threshold:
+                    conn.execute("UPDATE appointments SET status = 'no_show' WHERE id = ?", (appt['id'],))
+                    log.append(f"ID {appt['id']} ({date_str} {time_str}): UPDATED to no_show (Threshold: {threshold})")
+                    updated_count += 1
+                else:
+                    # log.append(f"ID {appt['id']}: Skipped (Threshold: {threshold})")
+                    pass
+            except Exception as e:
+                log.append(f"ID {appt['id']}: Error {e}")
+                continue
+                
+        conn.commit()
+        conn.close()
+        log.append(f"Total updated: {updated_count}")
+    except Exception as e:
+        log.append(f"Critical Error: {e}")
+        
+    return "<br>".join(log)
 
 # -------------------------
 # Authentication routes
