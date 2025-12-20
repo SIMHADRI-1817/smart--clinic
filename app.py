@@ -126,10 +126,23 @@ def update_appointment_statuses():
         
         for appt in appointments:
             try:
-                # Combine date and time strings into a datetime object
-                # Assuming date is YYYY-MM-DD and time is HH:MM
-                appt_dt_str = f"{appt['date']} {appt['time']}"
-                appt_dt = datetime.strptime(appt_dt_str, '%Y-%m-%d %H:%M')
+                # Handle multiple date formats
+                date_str = appt['date']
+                try:
+                    # Try YYYY-MM-DD first
+                    date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    try:
+                        # Try DD-MM-YYYY
+                        date_obj = datetime.strptime(date_str, '%d-%m-%Y').date()
+                    except ValueError:
+                        # Skip if date is unparseable
+                        print(f"Skipping unparseable date: {date_str}")
+                        continue
+
+                # Combine with time
+                time_str = appt['time']
+                appt_dt = datetime.combine(date_obj, datetime.strptime(time_str, '%H:%M').time())
                 
                 # Check if 1 hour has passed
                 if current_time > appt_dt + timedelta(minutes=60):
@@ -138,7 +151,7 @@ def update_appointment_statuses():
                         (appt['id'],)
                     )
             except ValueError:
-                # Handle cases where date/time format might be incorrect
+                # Handle cases where time format might be incorrect
                 continue
                 
         conn.commit()
@@ -151,6 +164,7 @@ def before_request():
     # Run this check on every request (or could limit to specific routes)
     # For this scale, running it here is fine.
     update_appointment_statuses()
+
 
 # -------------------------
 # Authentication routes
@@ -603,7 +617,21 @@ def booking():
 
         # Check if booking is in the past
         try:
-             booking_dt = datetime.strptime(f"{date} {time}", '%Y-%m-%d %H:%M')
+             # Parse date flexibly
+             booking_date = None
+             for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y', '%d/%m/%Y'):
+                 try:
+                     booking_date = datetime.strptime(date, fmt).date()
+                     break
+                 except ValueError:
+                     continue
+             
+             if not booking_date:
+                 raise ValueError("Invalid date format")
+
+             booking_time = datetime.strptime(time, '%H:%M').time()
+             booking_dt = datetime.combine(booking_date, booking_time)
+             
              if booking_dt < datetime.now():
                  flash("Cannot book appointments in the past. Please choose a future time.", "error")
                  conn.close()
