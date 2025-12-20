@@ -722,15 +722,26 @@ def get_available_slots():
     
     # Filter past times if date is today
     try:
+        print(f"DEBUG: Filtering slots. Date param: '{date}'")
         requested_date = datetime.strptime(date, '%Y-%m-%d').date()
         now = datetime.now()
+        print(f"DEBUG: Requested: {requested_date}, Server Now: {now.date()} {now.time()}")
+        
         if requested_date == now.date():
             current_time = now.time()
+            print(f"DEBUG: Date matches! Filtering times before {current_time}")
+            original_count = len(available_times)
             available_times = [t for t in available_times if datetime.strptime(t, '%H:%M').time() > current_time]
-    except ValueError:
+            print(f"DEBUG: Filtered {original_count} slots down to {len(available_times)}")
+        else:
+            print("DEBUG: Date does not match today.")
+            
+    except ValueError as e:
+        print(f"DEBUG: ValueError in slot filtering: {e}")
         pass
     
     return jsonify({'available_times': available_times})
+
 
 # -------------------------
 # Doctor Availability API
