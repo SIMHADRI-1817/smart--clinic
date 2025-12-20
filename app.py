@@ -12,6 +12,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from authlib.integrations.flask_client import OAuth
 import os
+import pytz
+
+def get_ist_time():
+    return datetime.now(pytz.timezone('Asia/Kolkata'))
 
 # Email Configuration (Placeholders - User to update)
 MAIL_SERVER = 'smtp.gmail.com'
@@ -122,7 +126,10 @@ def update_appointment_statuses():
             "SELECT id, date, time FROM appointments WHERE status IN ('pending', 'confirmed')"
         ).fetchall()
         
-        current_time = datetime.now()
+        current_time = get_ist_time()
+        # Convert naive datetime to aware for comparison
+        # current_time is aware (IST). appt_dt will be naive.
+        # We need to make appt_dt aware (assuming it was booked in IST).
         
         for appt in appointments:
             try:
@@ -142,7 +149,9 @@ def update_appointment_statuses():
 
                 # Combine with time
                 time_str = appt['time']
-                appt_dt = datetime.combine(date_obj, datetime.strptime(time_str, '%H:%M').time())
+                appt_dt_naive = datetime.combine(date_obj, datetime.strptime(time_str, '%H:%M').time())
+                # Localize to IST
+                appt_dt = pytz.timezone('Asia/Kolkata').localize(appt_dt_naive)
                 
                 # Check if 1 hour has passed
                 if current_time > appt_dt + timedelta(minutes=60):
@@ -173,8 +182,8 @@ def debug_fix_statuses():
             "SELECT id, date, time, status, patient_name FROM appointments WHERE status IN ('pending', 'confirmed')"
         ).fetchall()
         
-        current_time = datetime.now()
-        log.append(f"Current Time: {current_time}")
+        current_time = get_ist_time()
+        log.append(f"Current Time (IST): {current_time}")
         
         updated_count = 0
         
@@ -194,7 +203,8 @@ def debug_fix_statuses():
                     continue
 
                 time_str = appt['time']
-                appt_dt = datetime.combine(date_obj, datetime.strptime(time_str, '%H:%M').time())
+                appt_dt_naive = datetime.combine(date_obj, datetime.strptime(time_str, '%H:%M').time())
+                appt_dt = pytz.timezone('Asia/Kolkata').localize(appt_dt_naive)
                 
                 # Check if 1 hour has passed
                 threshold = appt_dt + timedelta(minutes=60)
@@ -682,9 +692,10 @@ def booking():
                  raise ValueError("Invalid date format")
 
              booking_time = datetime.strptime(time, '%H:%M').time()
-             booking_dt = datetime.combine(booking_date, booking_time)
+             booking_dt_naive = datetime.combine(booking_date, booking_time)
+             booking_dt = pytz.timezone('Asia/Kolkata').localize(booking_dt_naive)
              
-             if booking_dt < datetime.now():
+             if booking_dt < get_ist_time():
                  flash("Cannot book appointments in the past. Please choose a future time.", "error")
                  conn.close()
                  return redirect(url_for('booking'))
@@ -819,7 +830,7 @@ def get_available_slots():
                 f.write(" -> Failed to parse date!")
             raise ValueError("Invalid date format")
 
-        now = datetime.now()
+        now = get_ist_time()
         with open('debug_log.txt', 'a') as f:
              f.write(f" -> Parsed: {requested_date}, ServerToday: {now.date()}")
 
